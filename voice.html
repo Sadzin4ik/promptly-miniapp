@@ -7,16 +7,9 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --bg: #0f1115;
-    --card: #1a1d24;
-    --card-2: #21252e;
-    --text: #e8eaed;
-    --text-dim: #9aa0aa;
-    --accent: #5eb5f7;
-    --accent-2: #7b6ef6;
-    --success: #4ec9a3;
-    --border: rgba(255, 255, 255, 0.07);
-    --radius: 18px;
+    --bg: #0f1115; --card: #1a1d24; --card-2: #21252e; --text: #e8eaed;
+    --text-dim: #9aa0aa; --accent: #5eb5f7; --accent-2: #7b6ef6; --success: #4ec9a3;
+    --border: rgba(255, 255, 255, 0.07); --radius: 18px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
@@ -107,25 +100,42 @@
   const voiceText = getParam('text');
   const app = document.getElementById('app');
   const cache = {};
-  function hasCyrillic(str) { return /[а-яё]/i.test(str); }
+
+  // Основной перевод через бесплатный Google-эндпоинт
+  async function translateGoogle(text) {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=' +
+      encodeURIComponent(text);
+    const res = await fetch(url);
+    const data = await res.json();
+    // структура: data[0] = массив кусков, каждый кусок [перевод, оригинал,...]
+    if (Array.isArray(data) && Array.isArray(data[0])) {
+      return data[0].map(chunk => chunk[0]).join('');
+    }
+    return '';
+  }
+
+  // Запасной перевод через MyMemory
+  async function translateMyMemory(text) {
+    const url = 'https://api.mymemory.translated.net/get?q=' +
+      encodeURIComponent(text) + '&langpair=en|ru&de=promptly@example.com';
+    const res = await fetch(url);
+    const data = await res.json();
+    return data?.responseData?.translatedText || '';
+  }
+
   async function translate(text) {
     const key = text.toLowerCase().trim();
     if (cache[key]) return cache[key];
-    try {
-      const url = 'https://api.mymemory.translated.net/get?q=' +
-        encodeURIComponent(text) + '&langpair=en|ru&mt=1&de=promptly@example.com';
-      const res = await fetch(url);
-      const data = await res.json();
-      let best = data?.responseData?.translatedText || '';
-      if (!hasCyrillic(best) && Array.isArray(data?.matches)) {
-        const cyrillicMatch = data.matches.find(m => m.translation && hasCyrillic(m.translation));
-        if (cyrillicMatch) best = cyrillicMatch.translation;
-      }
-      if (!best || !hasCyrillic(best)) { best = '(перевод недоступен)'; }
-      cache[key] = best;
-      return best;
-    } catch (e) { return 'ошибка перевода'; }
+    let result = '';
+    try { result = await translateGoogle(text); } catch (e) { result = ''; }
+    if (!result) {
+      try { result = await translateMyMemory(text); } catch (e) { result = ''; }
+    }
+    if (!result) result = '(перевод недоступен)';
+    cache[key] = result;
+    return result;
   }
+
   if (!voiceText) {
     // дефолтное пустое состояние
   } else {
