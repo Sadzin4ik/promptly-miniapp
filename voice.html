@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Promptly — Текст голосового</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --card-2: #21252e;
+    --text: #e8eaed;
+    --text-dim: #9aa0aa;
+    --accent: #5eb5f7;
+    --accent-2: #7b6ef6;
+    --success: #4ec9a3;
+    --border: rgba(255, 255, 255, 0.07);
+    --radius: 18px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    padding: 20px 16px 120px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 560px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+  .header .dot {
+    width: 36px; height: 36px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 14px rgba(94, 181, 247, 0.3);
+  }
+  .header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+  .header p { font-size: 13px; color: var(--text-dim); margin-top: 1px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+    animation-delay: 0.1s;
+  }
+
+  .label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .text-block { font-size: 17px; line-height: 1.8; }
+
+  .word {
+    display: inline;
+    cursor: pointer;
+    border-radius: 5px;
+    padding: 1px 2px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .word:active, .word.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .translate-all-btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    margin-bottom: 14px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+    animation-delay: 0.18s;
+    transition: transform 0.12s, opacity 0.2s;
+  }
+  .translate-all-btn:active { transform: scale(0.98); }
+  .translate-all-btn:disabled { opacity: 0.6; }
+
+  .full-translation {
+    background: var(--card-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .full-translation.show { display: block; animation: fadeUp 0.4s ease forwards; }
+  .full-translation .text-block { font-size: 16px; color: var(--success); }
+
+  .hint {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+    animation-delay: 0.26s;
+  }
+
+  /* Всплывающая панель перевода слова снизу */
+  .word-popup {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    border-radius: 22px 22px 0 0;
+    padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
+    transform: translateY(110%);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 100;
+  }
+  .word-popup.show { transform: translateY(0); }
+  .word-popup .pop-orig {
+    font-size: 22px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .word-popup .pop-trans {
+    font-size: 18px; color: var(--success);
+    min-height: 24px;
+  }
+  .word-popup .pop-close {
+    position: absolute;
+    top: 16px; right: 18px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--card-2);
+    border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--text-dim);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--text-dim);
+  }
+  .empty .big { font-size: 46px; margin-bottom: 14px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="empty">
+    <div class="big">🎧</div>
+    <h2>Нет текста</h2>
+    <p>Открой из голосового сообщения</p>
+  </div>
+</div>
+
+<div class="word-popup" id="popup">
+  <button class="pop-close" id="popClose">×</button>
+  <div class="pop-orig" id="popOrig"></div>
+  <div class="pop-trans" id="popTrans"></div>
+</div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  function getParam(name) {
+    const p = new URLSearchParams(window.location.search);
+    const val = p.get(name);
+    return val ? decodeURIComponent(val) : '';
+  }
+
+  const voiceText = getParam('text');
+  const app = document.getElementById('app');
+
+  // Кэш переводов чтобы не дёргать API дважды за одно слово
+  const cache = {};
+
+  async function translate(text) {
+    const key = text.toLowerCase().trim();
+    if (cache[key]) return cache[key];
+    try {
+      const url = 'https://api.mymemory.translated.net/get?q=' +
+        encodeURIComponent(text) + '&langpair=en|ru';
+      const res = await fetch(url);
+      const data = await res.json();
+      const translated = data?.responseData?.translatedText || '—';
+      cache[key] = translated;
+      return translated;
+    } catch (e) {
+      return 'ошибка перевода';
+    }
+  }
+
+  if (!voiceText) {
+    // дефолтное пустое состояние уже в HTML
+  } else {
+    // Разбиваем текст на слова, сохраняя пробелы и пунктуацию
+    const tokens = voiceText.split(/(\s+)/);
+    const wordsHtml = tokens.map(tok => {
+      if (/^\s+$/.test(tok)) return tok; // пробелы как есть
+      // чистое слово без пунктуации для перевода
+      const clean = tok.replace(/[.,!?;:"'«»()]/g, '');
+      if (!clean) return tok;
+      return '<span class="word" data-word="' + clean.replace(/"/g, '&quot;') + '">' + tok + '</span>';
+    }).join('');
+
+    app.innerHTML =
+      '<div class="header">' +
+        '<div class="dot">🎧</div>' +
+        '<div><h1>Текст голосового</h1><p>Нажми на слово для перевода</p></div>' +
+      '</div>' +
+      '<button class="translate-all-btn" id="translateAll">🌐 Перевести всё</button>' +
+      '<div class="full-translation" id="fullTrans"><div class="label">🌐 Перевод</div><div class="text-block" id="fullTransText"></div></div>' +
+      '<div class="card"><div class="label">📝 Что сказал Promptly</div><div class="text-block" id="textBlock">' + wordsHtml + '</div></div>' +
+      '<div class="hint">💡 Тапни на любое слово или переведи весь текст</div>';
+
+    // Обработка тапа по слову
+    const popup = document.getElementById('popup');
+    const popOrig = document.getElementById('popOrig');
+    const popTrans = document.getElementById('popTrans');
+    let activeWord = null;
+
+    document.querySelectorAll('.word').forEach(el => {
+      el.addEventListener('click', async () => {
+        const word = el.getAttribute('data-word');
+        if (activeWord) activeWord.classList.remove('active');
+        el.classList.add('active');
+        activeWord = el;
+
+        popOrig.textContent = word;
+        popTrans.innerHTML = '<span class="spinner"></span>';
+        popup.classList.add('show');
+
+        const tr = await translate(word);
+        popTrans.textContent = tr;
+      });
+    });
+
+    document.getElementById('popClose').addEventListener('click', () => {
+      popup.classList.remove('show');
+      if (activeWord) { activeWord.classList.remove('active'); activeWord = null; }
+    });
+
+    // Перевести весь текст
+    const btn = document.getElementById('translateAll');
+    const fullTrans = document.getElementById('fullTrans');
+    const fullTransText = document.getElementById('fullTransText');
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Перевожу...';
+      const tr = await translate(voiceText);
+      fullTransText.textContent = tr;
+      fullTrans.classList.add('show');
+      btn.style.display = 'none';
+    });
+  }
+</script>
+</body>
+</html>
