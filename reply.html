@@ -29,7 +29,6 @@
   }
   .header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
   .header p { font-size: 13px; color: var(--text-dim); margin-top: 1px; }
-
   .context-card {
     background: var(--card-2); border: 1px solid var(--border);
     border-radius: 14px; padding: 14px 16px; margin-bottom: 18px;
@@ -41,7 +40,6 @@
     color: var(--text-dim); margin-bottom: 4px;
   }
   .context-card .ctx-text { color: var(--text); font-style: italic; }
-
   .variant {
     background: var(--card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 18px; margin-bottom: 14px;
@@ -50,7 +48,6 @@
   .variant:nth-of-type(1) { animation-delay: 0.16s; }
   .variant:nth-of-type(2) { animation-delay: 0.24s; }
   .variant:nth-of-type(3) { animation-delay: 0.32s; }
-
   .variant-head {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 10px;
@@ -64,11 +61,7 @@
   .badge.b-easy { background: rgba(78, 201, 163, 0.15); color: var(--success); }
   .badge.b-mid  { background: rgba(94, 181, 247, 0.15); color: var(--accent); }
   .badge.b-hard { background: rgba(247, 185, 85, 0.15); color: var(--warm); }
-
-  .variant-text {
-    font-size: 17px; line-height: 1.55; margin-bottom: 8px;
-  }
-
+  .variant-text { font-size: 17px; line-height: 1.55; margin-bottom: 8px; }
   .variant-translation {
     font-size: 14px; color: var(--success);
     background: var(--success-bg); padding: 8px 12px;
@@ -76,15 +69,12 @@
     display: none; line-height: 1.5;
   }
   .variant-translation.show { display: block; animation: fadeUp 0.3s ease forwards; }
-
   .toggle-btn, .send-btn, .translate-btn {
     border: none; font-family: inherit; font-size: 13px; font-weight: 600;
     border-radius: 11px; cursor: pointer; padding: 9px 14px;
     transition: transform 0.12s, opacity 0.15s, background 0.15s;
   }
-  .toggle-btn, .translate-btn {
-    background: var(--card-2); color: var(--text-dim);
-  }
+  .toggle-btn, .translate-btn { background: var(--card-2); color: var(--text-dim); }
   .toggle-btn:active, .translate-btn:active { transform: scale(0.97); }
   .toggle-btn.open { background: rgba(94, 181, 247, 0.18); color: var(--accent); }
   .translate-btn.active { background: rgba(78, 201, 163, 0.18); color: var(--success); }
@@ -94,23 +84,16 @@
   }
   .send-btn:active { transform: scale(0.97); }
   .send-btn.sent { background: var(--success); }
-
   .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-
   .spinner-small {
     display: inline-block; width: 11px; height: 11px;
     border: 2px solid currentColor; border-top-color: transparent;
     border-radius: 50%; animation: spin 0.7s linear infinite;
     vertical-align: middle; margin-right: 4px;
   }
-
   .breakdown {
-    margin-top: 14px;
-    background: var(--card-2);
-    border-radius: 12px;
-    padding: 0 14px;
-    max-height: 0;
-    overflow: hidden;
+    margin-top: 14px; background: var(--card-2); border-radius: 12px;
+    padding: 0 14px; max-height: 0; overflow: hidden;
     transition: max-height 0.35s ease, padding 0.35s ease;
   }
   .breakdown.show { max-height: 1000px; padding: 14px; }
@@ -120,36 +103,24 @@
   }
   .breakdown p { font-size: 14px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
   .breakdown p:last-child { margin-bottom: 0; }
-
-  .loader {
-    text-align: center; padding: 60px 20px;
-    opacity: 0; animation: fadeUp 0.5s ease forwards;
-  }
+  .loader { text-align: center; padding: 60px 20px; opacity: 0; animation: fadeUp 0.5s ease forwards; }
   .loader .spinner-big {
     width: 36px; height: 36px;
     border: 3px solid var(--border); border-top-color: var(--accent);
-    border-radius: 50%; margin: 0 auto 16px;
-    animation: spin 0.8s linear infinite;
+    border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite;
   }
   .loader p { color: var(--text-dim); font-size: 14px; }
-
-  .empty {
-    text-align: center; padding: 50px 20px; color: var(--text-dim);
-    opacity: 0; animation: fadeUp 0.5s ease forwards;
-  }
+  .empty { text-align: center; padding: 50px 20px; color: var(--text-dim); opacity: 0; animation: fadeUp 0.5s ease forwards; }
   .empty .big { font-size: 46px; margin-bottom: 14px; }
-
   .toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120%);
     background: var(--card); border: 1px solid var(--border);
     color: var(--text); font-size: 14px; font-weight: 500;
     padding: 12px 18px; border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: 200;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); z-index: 200;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
-
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -183,11 +154,9 @@
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2000);
   }
-
   function escapeHtml(s) {
     return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
-
   async function translateGoogle(text) {
     const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=' +
       encodeURIComponent(text);
@@ -205,7 +174,7 @@
     const data = await res.json();
     return data?.responseData?.translatedText || '';
   }
-  async function translate(text) {
+  async function translateFallback(text) {
     const key = text.toLowerCase().trim();
     if (translationCache[key]) return translationCache[key];
     let result = '';
@@ -215,12 +184,9 @@
     translationCache[key] = result;
     return result;
   }
-
   async function copyToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (e) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
       const ta = document.createElement('textarea');
       ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
       document.body.appendChild(ta); ta.select();
@@ -254,9 +220,7 @@
 
         return '' +
           '<div class="variant">' +
-            '<div class="variant-head">' +
-              '<span class="badge ' + lvl.cls + '">' + lvl.label + '</span>' +
-            '</div>' +
+            '<div class="variant-head"><span class="badge ' + lvl.cls + '">' + lvl.label + '</span></div>' +
             '<div class="variant-text">' + escapeHtml(text) + '</div>' +
             '<div class="variant-translation" id="tr-' + i + '"></div>' +
             '<div class="actions">' +
@@ -275,19 +239,13 @@
       }).join('');
 
       app.innerHTML =
-        '<div class="header">' +
-          '<div class="dot">💬</div>' +
-          '<div><h1>Варианты ответа</h1><p>Выбери, разбери и отправь</p></div>' +
-        '</div>' +
+        '<div class="header"><div class="dot">💬</div><div><h1>Варианты ответа</h1><p>Выбери, разбери и отправь</p></div></div>' +
         (botMessage ? (
-          '<div class="context-card">' +
-            '<div class="ctx-label">📨 Promptly спросил</div>' +
-            '<div class="ctx-text">"' + escapeHtml(botMessage) + '"</div>' +
-          '</div>'
+          '<div class="context-card"><div class="ctx-label">📨 Promptly спросил</div><div class="ctx-text">"' + escapeHtml(botMessage) + '"</div></div>'
         ) : '') +
         variantsHtml;
 
-      // Перевод варианта
+      // Перевод варианта — сначала готовый от GPT, потом fallback Google
       document.querySelectorAll('.translate-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const i = parseInt(btn.getAttribute('data-i'));
@@ -299,9 +257,21 @@
             btn.textContent = '🌐 Перевод';
             return;
           }
+
+          // 1. Сначала пробуем готовый перевод от GPT
+          const ready = variants[i]?.translation;
+          if (ready && ready.trim().length > 0) {
+            trBox.textContent = ready;
+            trBox.classList.add('show');
+            btn.classList.add('active');
+            btn.textContent = '🌐 Скрыть перевод';
+            return;
+          }
+
+          // 2. Если нет — fallback на Google
           btn.innerHTML = '<span class="spinner-small"></span>Перевожу';
           btn.disabled = true;
-          const tr = await translate(variants[i]?.text || '');
+          const tr = await translateFallback(variants[i]?.text || '');
           trBox.textContent = tr;
           trBox.classList.add('show');
           btn.disabled = false;
@@ -310,21 +280,16 @@
         });
       });
 
-      // Разбор
       document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const i = btn.getAttribute('data-i');
           const bd = document.getElementById('bd-' + i);
           const open = bd.classList.contains('show');
-          if (open) {
-            bd.classList.remove('show'); btn.classList.remove('open'); btn.textContent = 'Разобрать ✨';
-          } else {
-            bd.classList.add('show'); btn.classList.add('open'); btn.textContent = 'Свернуть ↑';
-          }
+          if (open) { bd.classList.remove('show'); btn.classList.remove('open'); btn.textContent = 'Разобрать ✨'; }
+          else { bd.classList.add('show'); btn.classList.add('open'); btn.textContent = 'Свернуть ↑'; }
         });
       });
 
-      // Копирование
       document.querySelectorAll('.send-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const i = parseInt(btn.getAttribute('data-i'));
