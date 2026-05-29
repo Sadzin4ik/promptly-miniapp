@@ -66,20 +66,28 @@
   .badge.b-hard { background: rgba(247, 185, 85, 0.15); color: var(--warm); }
 
   .variant-text {
-    font-size: 17px; line-height: 1.55; margin-bottom: 12px;
+    font-size: 17px; line-height: 1.55; margin-bottom: 8px;
   }
 
-  .toggle-btn, .send-btn {
+  .variant-translation {
+    font-size: 14px; color: var(--success);
+    background: var(--success-bg); padding: 8px 12px;
+    border-radius: 9px; margin-bottom: 12px;
+    display: none; line-height: 1.5;
+  }
+  .variant-translation.show { display: block; animation: fadeUp 0.3s ease forwards; }
+
+  .toggle-btn, .send-btn, .translate-btn {
     border: none; font-family: inherit; font-size: 13px; font-weight: 600;
     border-radius: 11px; cursor: pointer; padding: 9px 14px;
     transition: transform 0.12s, opacity 0.15s, background 0.15s;
   }
-  .toggle-btn {
+  .toggle-btn, .translate-btn {
     background: var(--card-2); color: var(--text-dim);
-    margin-right: 8px;
   }
-  .toggle-btn:active { transform: scale(0.97); }
+  .toggle-btn:active, .translate-btn:active { transform: scale(0.97); }
   .toggle-btn.open { background: rgba(94, 181, 247, 0.18); color: var(--accent); }
+  .translate-btn.active { background: rgba(78, 201, 163, 0.18); color: var(--success); }
   .send-btn {
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
     color: #fff; padding: 9px 16px;
@@ -87,7 +95,14 @@
   .send-btn:active { transform: scale(0.97); }
   .send-btn.sent { background: var(--success); }
 
-  .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
+  .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+
+  .spinner-small {
+    display: inline-block; width: 11px; height: 11px;
+    border: 2px solid currentColor; border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+  }
 
   .breakdown {
     margin-top: 14px;
@@ -105,11 +120,6 @@
   }
   .breakdown p { font-size: 14px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
   .breakdown p:last-child { margin-bottom: 0; }
-  .breakdown .tag {
-    display: inline-block; font-size: 12px; padding: 2px 8px;
-    border-radius: 6px; background: rgba(94, 181, 247, 0.12); color: var(--accent);
-    margin: 2px 4px 2px 0;
-  }
 
   .loader {
     text-align: center; padding: 60px 20px;
@@ -163,9 +173,10 @@
   }
 
   const botMessage = getParam('bot');
-  const variantsRaw = getParam('variants'); // JSON-строка с массивом вариантов
+  const variantsRaw = getParam('variants');
   const app = document.getElementById('app');
   const toast = document.getElementById('toast');
+  const translationCache = {};
 
   function showToast(text) {
     toast.textContent = text;
@@ -177,26 +188,44 @@
     return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  async function translateGoogle(text) {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=' +
+      encodeURIComponent(text);
+    const res = await fetch(url);
+    const data = await res.json();
+    if (Array.isArray(data) && Array.isArray(data[0])) {
+      return data[0].map(chunk => chunk[0]).join('');
+    }
+    return '';
+  }
+  async function translateMyMemory(text) {
+    const url = 'https://api.mymemory.translated.net/get?q=' +
+      encodeURIComponent(text) + '&langpair=en|ru&de=promptly@example.com';
+    const res = await fetch(url);
+    const data = await res.json();
+    return data?.responseData?.translatedText || '';
+  }
+  async function translate(text) {
+    const key = text.toLowerCase().trim();
+    if (translationCache[key]) return translationCache[key];
+    let result = '';
+    try { result = await translateGoogle(text); } catch(e) {}
+    if (!result) { try { result = await translateMyMemory(text); } catch(e) {} }
+    if (!result) result = '(перевод недоступен)';
+    translationCache[key] = result;
+    return result;
+  }
+
   async function copyToClipboard(text) {
     try {
       await navigator.clipboard.writeText(text);
       return true;
     } catch (e) {
-      // fallback для старых браузеров
       const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        return true;
-      } catch (e2) {
-        document.body.removeChild(ta);
-        return false;
-      }
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); document.body.removeChild(ta); return true; }
+      catch (e2) { document.body.removeChild(ta); return false; }
     }
   }
 
@@ -221,7 +250,6 @@
         const grammar = v.grammar || '';
         const vocab = v.vocab || '';
         const reason = v.reason || '';
-
         const hasBreakdown = grammar || vocab || reason;
 
         return '' +
@@ -230,7 +258,9 @@
               '<span class="badge ' + lvl.cls + '">' + lvl.label + '</span>' +
             '</div>' +
             '<div class="variant-text">' + escapeHtml(text) + '</div>' +
+            '<div class="variant-translation" id="tr-' + i + '"></div>' +
             '<div class="actions">' +
+              '<button class="translate-btn" data-i="' + i + '">🌐 Перевод</button>' +
               (hasBreakdown ? '<button class="toggle-btn" data-i="' + i + '">Разобрать ✨</button>' : '') +
               '<button class="send-btn" data-i="' + i + '">Скопировать →</button>' +
             '</div>' +
@@ -257,24 +287,44 @@
         ) : '') +
         variantsHtml;
 
-      // Обработчики
+      // Перевод варианта
+      document.querySelectorAll('.translate-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const i = parseInt(btn.getAttribute('data-i'));
+          const trBox = document.getElementById('tr-' + i);
+          const isShown = trBox.classList.contains('show');
+          if (isShown) {
+            trBox.classList.remove('show');
+            btn.classList.remove('active');
+            btn.textContent = '🌐 Перевод';
+            return;
+          }
+          btn.innerHTML = '<span class="spinner-small"></span>Перевожу';
+          btn.disabled = true;
+          const tr = await translate(variants[i]?.text || '');
+          trBox.textContent = tr;
+          trBox.classList.add('show');
+          btn.disabled = false;
+          btn.classList.add('active');
+          btn.textContent = '🌐 Скрыть перевод';
+        });
+      });
+
+      // Разбор
       document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const i = btn.getAttribute('data-i');
           const bd = document.getElementById('bd-' + i);
           const open = bd.classList.contains('show');
           if (open) {
-            bd.classList.remove('show');
-            btn.classList.remove('open');
-            btn.textContent = 'Разобрать ✨';
+            bd.classList.remove('show'); btn.classList.remove('open'); btn.textContent = 'Разобрать ✨';
           } else {
-            bd.classList.add('show');
-            btn.classList.add('open');
-            btn.textContent = 'Свернуть ↑';
+            bd.classList.add('show'); btn.classList.add('open'); btn.textContent = 'Свернуть ↑';
           }
         });
       });
 
+      // Копирование
       document.querySelectorAll('.send-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const i = parseInt(btn.getAttribute('data-i'));
@@ -285,10 +335,7 @@
             btn.textContent = 'Скопировано ✓';
             btn.classList.add('sent');
             showToast('Текст скопирован — вставь в чат');
-            // Закроем Mini App через 1.2 сек чтобы юзер вернулся в чат
-            setTimeout(() => {
-              if (tg && tg.close) tg.close();
-            }, 1200);
+            setTimeout(() => { if (tg && tg.close) tg.close(); }, 1200);
           } else {
             showToast('Не получилось скопировать');
           }
