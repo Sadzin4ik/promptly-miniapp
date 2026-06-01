@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Promptly</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #0f1115; --card: #1a1d24; --card-2: #21252e; --text: #e8eaed;
+    --text-dim: #9aa0aa; --accent: #5eb5f7; --accent-2: #7b6ef6; --success: #4ec9a3;
+    --warm: #f7b955; --fire: #ff7a3c; --border: rgba(255,255,255,0.07); --radius: 18px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh;
+    -webkit-font-smoothing:antialiased; padding-bottom:78px;
+  }
+  .screen { max-width:560px; margin:0 auto; padding:20px 16px; display:none; }
+  .screen.active { display:block; }
+
+  /* HERO профиля */
+  .hero {
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius:22px; padding:24px; margin-bottom:16px; position:relative; overflow:hidden;
+    opacity:0; animation:fadeUp 0.5s ease forwards;
+  }
+  .hero::after {
+    content:''; position:absolute; right:-30px; top:-30px; width:160px; height:160px;
+    background:rgba(255,255,255,0.12); border-radius:50%;
+  }
+  .hero::before {
+    content:''; position:absolute; right:20px; bottom:-40px; width:110px; height:110px;
+    background:rgba(255,255,255,0.08); border-radius:50%;
+  }
+  .hero-label { font-size:13px; color:rgba(255,255,255,0.85); font-weight:600; letter-spacing:0.3px; margin-bottom:2px; }
+  .hero-streak { font-size:56px; font-weight:800; color:#fff; line-height:1; display:flex; align-items:center; gap:10px; }
+  .hero-streak .fire { font-size:40px; }
+  .hero-days { font-size:14px; color:rgba(255,255,255,0.9); font-weight:600; margin-top:6px; text-transform:uppercase; letter-spacing:0.5px; }
+  .hero-name { font-size:22px; font-weight:800; color:#fff; margin-top:14px; position:relative; z-index:1; }
+  .hero-level {
+    display:inline-block; margin-top:6px; font-size:12px; font-weight:700; color:#fff;
+    background:rgba(255,255,255,0.2); padding:3px 11px; border-radius:8px; text-transform:uppercase; letter-spacing:0.5px;
+  }
+
+  .section-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-dim); margin:18px 4px 12px; }
+
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .stat-card {
+    background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px;
+    opacity:0; animation:fadeUp 0.5s ease forwards;
+  }
+  .stat-card:nth-child(1){animation-delay:0.05s} .stat-card:nth-child(2){animation-delay:0.1s}
+  .stat-card:nth-child(3){animation-delay:0.15s} .stat-card:nth-child(4){animation-delay:0.2s}
+  .stat-card:nth-child(5){animation-delay:0.25s} .stat-card:nth-child(6){animation-delay:0.3s}
+  .stat-label { font-size:12px; color:var(--text-dim); font-weight:600; margin-bottom:6px; }
+  .stat-value { font-size:28px; font-weight:800; color:var(--text); line-height:1; }
+  .stat-value .unit { font-size:15px; color:var(--text-dim); font-weight:600; }
+  .stat-card.accent .stat-value { color:var(--accent); }
+  .stat-card.success .stat-value { color:var(--success); }
+  .stat-card.warm .stat-value { color:var(--warm); }
+
+  /* прогресс-бар корректности */
+  .correctness-bar { margin-top:8px; height:6px; background:var(--card-2); border-radius:3px; overflow:hidden; }
+  .correctness-fill { height:100%; background:linear-gradient(90deg,var(--success),var(--accent)); border-radius:3px; transition:width 0.8s ease; }
+
+  /* нижняя навигация */
+  .navbar {
+    position:fixed; bottom:0; left:0; right:0; background:var(--card);
+    border-top:1px solid var(--border); display:flex; justify-content:space-around;
+    padding:10px 0 calc(10px + env(safe-area-inset-bottom)); z-index:50;
+  }
+  .nav-item {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; cursor:pointer; color:var(--text-dim); font-family:inherit;
+    transition:color 0.15s;
+  }
+  .nav-item.active { color:var(--accent); }
+  .nav-icon { font-size:21px; }
+  .nav-label { font-size:11px; font-weight:600; }
+
+  .loader { text-align:center; padding:70px 20px; }
+  .loader .spin { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; margin:0 auto 14px; animation:spin 0.8s linear infinite; }
+  .loader p { color:var(--text-dim); font-size:14px; }
+
+  .soon { text-align:center; padding:80px 24px; color:var(--text-dim); }
+  .soon .big { font-size:48px; margin-bottom:16px; }
+  .soon h2 { font-size:20px; color:var(--text); margin-bottom:8px; }
+  .soon p { font-size:14px; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+
+<!-- ПРОФИЛЬ -->
+<div class="screen active" id="screen-profile">
+  <div id="profileContent">
+    <div class="loader"><div class="spin"></div><p>Загружаю профиль...</p></div>
+  </div>
+</div>
+
+<!-- СЛОВАРЬ (заглушка) -->
+<div class="screen" id="screen-vocab">
+  <div class="soon"><div class="big">📚</div><h2>Словарь</h2><p>Скоро здесь появятся сохранённые слова<br>с умным повторением</p></div>
+</div>
+
+<!-- ПРОГРЕСС (заглушка) -->
+<div class="screen" id="screen-progress">
+  <div class="soon"><div class="big">📈</div><h2>Прогресс</h2><p>Скоро здесь будет детальная<br>статистика твоего обучения</p></div>
+</div>
+
+<!-- НАВИГАЦИЯ -->
+<div class="navbar">
+  <button class="nav-item active" data-screen="profile"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></button>
+  <button class="nav-item" data-screen="vocab"><span class="nav-icon">📚</span><span class="nav-label">Словарь</span></button>
+  <button class="nav-item" data-screen="progress"><span class="nav-icon">📈</span><span class="nav-label">Прогресс</span></button>
+</div>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  // навигация по вкладкам
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-screen');
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('screen-' + target).classList.add('active');
+    });
+  });
+
+  const levelRu = { beginner:'Начальный', intermediate:'Средний', advanced:'Продвинутый' };
+
+  function pluralDays(n) {
+    const a = Math.abs(n) % 100; const b = a % 10;
+    if (a > 10 && a < 20) return 'дней';
+    if (b > 1 && b < 5) return 'дня';
+    if (b === 1) return 'день';
+    return 'дней';
+  }
+
+  async function loadProfile() {
+    const content = document.getElementById('profileContent');
+    // Telegram ID юзера
+    const tgId = tg?.initDataUnsafe?.user?.id;
+    if (!tgId) {
+      content.innerHTML = '<div class="soon"><div class="big">🔒</div><h2>Открой из Telegram</h2><p>Профиль доступен только внутри бота</p></div>';
+      return;
+    }
+    try {
+      const res = await fetch('https://promptly-miniapp.vercel.app/api/profile?tgId=' + tgId);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'fail');
+
+      const corr = data.correctness || 0;
+      const html =
+        '<div class="hero">' +
+          '<div class="hero-label">ГОВОРЮ НА ENGLISH</div>' +
+          '<div class="hero-streak"><span class="fire">🔥</span>' + (data.streak||0) + '</div>' +
+          '<div class="hero-days">' + (data.streak===1?'день подряд':'дней подряд') + '</div>' +
+          '<div class="hero-name">' + (data.name||'Друг') + '</div>' +
+          '<div class="hero-level">' + (levelRu[data.level]||data.level||'Начальный') + '</div>' +
+        '</div>' +
+        '<div class="section-title">Общая активность</div>' +
+        '<div class="stat-grid">' +
+          '<div class="stat-card warm"><div class="stat-label">Рекорд серии</div><div class="stat-value">' + (data.maxStreak||0) + ' <span class="unit">' + pluralDays(data.maxStreak||0) + '</span></div></div>' +
+          '<div class="stat-card accent"><div class="stat-label">Дней с Promptly</div><div class="stat-value">' + (data.daysSinceStart||0) + ' <span class="unit">' + pluralDays(data.daysSinceStart||0) + '</span></div></div>' +
+          '<div class="stat-card"><div class="stat-label">Сообщений</div><div class="stat-value">' + (data.messages||0) + '</div></div>' +
+          '<div class="stat-card"><div class="stat-label">Слов написано</div><div class="stat-value">' + (data.words||0) + '</div></div>' +
+        '</div>' +
+        '<div class="section-title">Точность речи</div>' +
+        '<div class="stat-card success" style="animation-delay:0.3s">' +
+          '<div class="stat-label">Сообщений без ошибок</div>' +
+          '<div class="stat-value">' + corr + '<span class="unit">%</span></div>' +
+          '<div class="correctness-bar"><div class="correctness-fill" id="corrFill" style="width:0%"></div></div>' +
+        '</div>';
+      content.innerHTML = html;
+      // анимация заполнения бара
+      setTimeout(() => { const f = document.getElementById('corrFill'); if (f) f.style.width = corr + '%'; }, 200);
+    } catch(e) {
+      content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
+    }
+  }
+
+  loadProfile();
+</script>
+</body>
+</html>
