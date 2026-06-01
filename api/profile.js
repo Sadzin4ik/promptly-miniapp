@@ -12,30 +12,25 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // userId приходит как query-параметр: /api/profile?userId=xxx
-    const userId = req.query.userId || (req.body && req.body.userId);
-    if (!userId) {
-      return res.status(400).json({ ok: false, error: 'userId required' });
+    // tgId приходит как query-параметр: /api/profile?tgId=12345
+    const tgId = req.query.tgId || (req.body && req.body.tgId);
+    if (!tgId) {
+      return res.status(400).json({ ok: false, error: 'tgId required' });
     }
 
-    // Читаем три блока данных
-    const profile = await redis.get('user:' + userId + ':profile');
-    const stats = await redis.get('user:' + userId + ':stats');
-    const streak = await redis.get('user:' + userId + ':streak');
+    const key = 'tg:' + tgId;
+    const profile = await redis.get(key + ':profile');
+    const stats = await redis.get(key + ':stats');
+    const streak = await redis.get(key + ':streak');
 
-    // Значения по умолчанию если данных ещё нет
     const p = profile || {};
     const s = stats || {};
     const st = streak || {};
 
     const totalMessages = s.messages || 0;
     const correctMessages = s.correct || 0;
-    // процент корректности
-    const correctness = totalMessages > 0 
-      ? Math.round((correctMessages / totalMessages) * 100) 
-      : 0;
+    const correctness = totalMessages > 0 ? Math.round((correctMessages / totalMessages) * 100) : 0;
 
-    // сколько дней с регистрации
     let daysSinceStart = 0;
     if (p.startDate) {
       const start = new Date(p.startDate);
