@@ -55,7 +55,6 @@
   .full-translation .text-block { font-size: 16px; color: var(--success); }
   .hint { text-align: center; font-size: 13px; color: var(--text-dim); margin-top: 4px; opacity: 0; animation: fadeUp 0.5s ease forwards; animation-delay: 0.26s; }
 
-  /* Расширенная всплывашка-словарь */
   .word-popup {
     position: fixed; left: 0; right: 0; bottom: 0; background: var(--card);
     border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
@@ -81,10 +80,7 @@
   .pop-audio:active { transform: scale(0.9); }
   .pop-audio:disabled { opacity: 0.3; cursor: default; }
   .pop-phonetic { font-size: 15px; color: var(--text-dim); font-style: italic; }
-  .pop-trans {
-    font-size: 18px; color: var(--success); font-weight: 600;
-    margin-bottom: 14px; min-height: 24px;
-  }
+  .pop-trans { font-size: 18px; color: var(--success); font-weight: 600; margin-bottom: 14px; min-height: 24px; }
   .pos-group { margin-bottom: 14px; }
   .pos-tag {
     display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -94,7 +90,7 @@
   .def-item { margin-bottom: 9px; padding-left: 2px; }
   .def-text { font-size: 14px; color: var(--text); line-height: 1.5; }
   .def-example { font-size: 13px; color: var(--text-dim); font-style: italic; margin-top: 3px; }
-  .def-example::before { content: '„'; } .def-example::after { content: '"'; }
+  .def-example b { color: var(--accent); font-style: normal; font-weight: 700; }
   .pop-loading { color: var(--text-dim); font-size: 14px; padding: 8px 0; }
   .pop-nodict { color: var(--text-dim); font-size: 13px; font-style: italic; }
 
@@ -164,7 +160,6 @@
     return r;
   }
 
-  // Словарь — Free Dictionary API
   async function lookupDict(word) {
     const key = word.toLowerCase().trim();
     if (dictCache[key] !== undefined) return dictCache[key];
@@ -174,7 +169,6 @@
       const data = await res.json();
       if (!Array.isArray(data) || !data[0]) { dictCache[key] = null; return null; }
       const entry = data[0];
-      // транскрипция
       let phonetic = entry.phonetic || '';
       let audio = '';
       if (Array.isArray(entry.phonetics)) {
@@ -184,7 +178,6 @@
         }
       }
       if (audio && audio.startsWith('//')) audio = 'https:' + audio;
-      // значения по частям речи (макс 3 части речи, по 2 определения)
       const meanings = [];
       if (Array.isArray(entry.meanings)) {
         for (const m of entry.meanings.slice(0, 3)) {
@@ -206,7 +199,6 @@
     }
   }
 
-  // Перевод части речи на русский
   const posRu = {
     'noun': 'существительное', 'verb': 'глагол', 'adjective': 'прилагательное',
     'adverb': 'наречие', 'pronoun': 'местоимение', 'preposition': 'предлог',
@@ -214,6 +206,18 @@
     'determiner': 'определитель', 'article': 'артикль', 'numeral': 'числительное',
     'intransitive verb': 'непереходный глагол', 'transitive verb': 'переходный глагол'
   };
+
+  // Выделить разбираемое слово (и его формы) в примере жирным
+  function highlightWord(example, word) {
+    const safe = escapeHtml(example);
+    if (!word) return safe;
+    // ищем слово и его простые формы (word, words, worded, wording, etc) по началу
+    const base = word.toLowerCase().replace(/[^a-z]/g, '');
+    if (base.length < 2) return safe;
+    // граница слова, регистронезависимо, захватываем словоформы (приставка корня + возможное окончание)
+    const re = new RegExp('\\b(' + base + '[a-z]{0,4})\\b', 'gi');
+    return safe.replace(re, '<b>$1</b>');
+  }
 
   if (!voiceText) {
     // пусто
@@ -254,7 +258,6 @@
         el.classList.add('active');
         activeWord = el;
 
-        // сброс
         popOrig.textContent = word;
         popPhonetic.textContent = '';
         popTrans.innerHTML = '<span class="spinner"></span>';
@@ -263,10 +266,8 @@
         popAudio.disabled = true;
         popup.classList.add('show');
 
-        // 1. перевод (быстро)
         translate(word).then(tr => { popTrans.textContent = tr; });
 
-        // 2. словарь
         const dict = await lookupDict(word);
         if (!dict) {
           popDict.innerHTML = '<div class="pop-nodict">Подробный разбор недоступен для этого слова</div>';
@@ -276,14 +277,29 @@
         if (dict.audio) { currentAudioUrl = dict.audio; popAudio.disabled = false; }
         else { popAudio.disabled = true; }
 
+        // Собираем определения, переводим их через Google (батчем)
+        const defsToTranslate = [];
+        for (const m of dict.meanings) {
+          for (const d of m.defs) {
+            if (d.definition) defsToTranslate.push(d.definition);
+          }
+        }
+
+        // Переводим каждое определение
+        const translatedDefs = {};
+        await Promise.all(defsToTranslate.map(async (def) => {
+          translatedDefs[def] = await translate(def);
+        }));
+
         let html = '';
         for (const m of dict.meanings) {
           if (!m.defs.length) continue;
           const posLabel = posRu[m.pos] || m.pos;
           html += '<div class="pos-group"><span class="pos-tag">' + escapeHtml(posLabel) + '</span>';
           for (const d of m.defs) {
-            html += '<div class="def-item"><div class="def-text">' + escapeHtml(d.definition) + '</div>';
-            if (d.example) html += '<div class="def-example">' + escapeHtml(d.example) + '</div>';
+            const defRu = translatedDefs[d.definition] || escapeHtml(d.definition);
+            html += '<div class="def-item"><div class="def-text">' + escapeHtml(defRu) + '</div>';
+            if (d.example) html += '<div class="def-example">' + highlightWord(d.example, word) + '</div>';
             html += '</div>';
           }
           html += '</div>';
