@@ -61,7 +61,7 @@
     padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
     box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45); transform: translateY(110%);
     transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); z-index: 100;
-    max-height: 75vh; overflow-y: auto;
+    max-height: 78vh; overflow-y: auto;
   }
   .word-popup.show { transform: translateY(0); }
   .pop-close {
@@ -81,6 +81,17 @@
   .pop-audio:disabled { opacity: 0.3; cursor: default; }
   .pop-phonetic { font-size: 15px; color: var(--text-dim); font-style: italic; }
   .pop-trans { font-size: 18px; color: var(--success); font-weight: 600; margin-bottom: 14px; min-height: 24px; }
+
+  .pop-save {
+    width: 100%; padding: 13px; border: none; border-radius: 13px;
+    background: rgba(247, 185, 85, 0.15); color: var(--warm);
+    font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+    margin-bottom: 14px; transition: transform 0.12s, background 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .pop-save:active { transform: scale(0.98); }
+  .pop-save.saved { background: rgba(78, 201, 163, 0.15); color: var(--success); }
+
   .pos-group { margin-bottom: 14px; }
   .pos-tag {
     display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
@@ -91,6 +102,7 @@
   .def-text { font-size: 14px; color: var(--text); line-height: 1.5; }
   .def-example { font-size: 13px; color: var(--text-dim); font-style: italic; margin-top: 3px; }
   .def-example b { color: var(--accent); font-style: normal; font-weight: 700; }
+  .def-example::before { content: '„'; } .def-example::after { content: '"'; }
   .pop-loading { color: var(--text-dim); font-size: 14px; padding: 8px 0; }
   .pop-nodict { color: var(--text-dim); font-size: 13px; font-style: italic; }
 
@@ -117,12 +129,15 @@
     <span class="pop-phonetic" id="popPhonetic"></span>
   </div>
   <div class="pop-trans" id="popTrans"></div>
+  <button class="pop-save" id="popSave">⭐ Сохранить в словарь</button>
   <div id="popDict"></div>
 </div>
 
 <script>
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
+  const API = 'https://promptly-miniapp.vercel.app';
+  const tgId = tg?.initDataUnsafe?.user?.id || null;
 
   function getParam(name) {
     const p = new URLSearchParams(window.location.search);
@@ -193,28 +208,21 @@
       const result = { phonetic, audio, meanings };
       dictCache[key] = result;
       return result;
-    } catch(e) {
-      dictCache[key] = null;
-      return null;
-    }
+    } catch(e) { dictCache[key] = null; return null; }
   }
 
   const posRu = {
-    'noun': 'существительное', 'verb': 'глагол', 'adjective': 'прилагательное',
-    'adverb': 'наречие', 'pronoun': 'местоимение', 'preposition': 'предлог',
-    'conjunction': 'союз', 'interjection': 'междометие', 'exclamation': 'восклицание',
-    'determiner': 'определитель', 'article': 'артикль', 'numeral': 'числительное',
-    'intransitive verb': 'непереходный глагол', 'transitive verb': 'переходный глагол'
+    'noun':'существительное','verb':'глагол','adjective':'прилагательное','adverb':'наречие',
+    'pronoun':'местоимение','preposition':'предлог','conjunction':'союз','interjection':'междометие',
+    'exclamation':'восклицание','determiner':'определитель','article':'артикль','numeral':'числительное',
+    'intransitive verb':'непереходный глагол','transitive verb':'переходный глагол'
   };
 
-  // Выделить разбираемое слово (и его формы) в примере жирным
   function highlightWord(example, word) {
     const safe = escapeHtml(example);
     if (!word) return safe;
-    // ищем слово и его простые формы (word, words, worded, wording, etc) по началу
     const base = word.toLowerCase().replace(/[^a-z]/g, '');
     if (base.length < 2) return safe;
-    // граница слова, регистронезависимо, захватываем словоформы (приставка корня + возможное окончание)
     const re = new RegExp('\\b(' + base + '[a-z]{0,4})\\b', 'gi');
     return safe.replace(re, '<b>$1</b>');
   }
@@ -243,12 +251,45 @@
     const popTrans = document.getElementById('popTrans');
     const popDict = document.getElementById('popDict');
     const popAudio = document.getElementById('popAudio');
+    const popSave = document.getElementById('popSave');
     let activeWord = null;
     let currentAudioUrl = '';
+    let currentWord = '';
+    let currentTrans = '';
+    let currentPhonetic = '';
 
     popAudio.addEventListener('click', () => {
       if (!currentAudioUrl) return;
       try { new Audio(currentAudioUrl).play(); } catch(e){}
+    });
+
+    // Сохранение слова в словарь
+    popSave.addEventListener('click', async () => {
+      if (!currentWord) return;
+      if (!tgId) { popSave.textContent = '⚠️ Открой из Telegram'; return; }
+      popSave.disabled = true;
+      popSave.innerHTML = '<span class="spinner"></span> Сохраняю...';
+      try {
+        const res = await fetch(API + '/api/vocab-add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tgId: tgId, word: currentWord, translation: currentTrans, phonetic: currentPhonetic })
+        });
+        const data = await res.json();
+        if (data.ok && data.added) {
+          popSave.classList.add('saved');
+          popSave.textContent = '✓ Добавлено в словарь';
+        } else if (data.ok && !data.added) {
+          popSave.classList.add('saved');
+          popSave.textContent = '✓ Уже в словаре';
+        } else {
+          popSave.textContent = '⚠️ Не получилось';
+          popSave.disabled = false;
+        }
+      } catch(e) {
+        popSave.textContent = '⚠️ Ошибка сети';
+        popSave.disabled = false;
+      }
     });
 
     document.querySelectorAll('.word').forEach(el => {
@@ -258,38 +299,35 @@
         el.classList.add('active');
         activeWord = el;
 
+        currentWord = word.toLowerCase();
+        currentTrans = '';
+        currentPhonetic = '';
         popOrig.textContent = word;
         popPhonetic.textContent = '';
         popTrans.innerHTML = '<span class="spinner"></span>';
         popDict.innerHTML = '<div class="pop-loading">Загружаю разбор...</div>';
         currentAudioUrl = '';
         popAudio.disabled = true;
+        popSave.disabled = false;
+        popSave.classList.remove('saved');
+        popSave.textContent = '⭐ Сохранить в словарь';
         popup.classList.add('show');
 
-        translate(word).then(tr => { popTrans.textContent = tr; });
+        translate(word).then(tr => { popTrans.textContent = tr; currentTrans = tr; });
 
         const dict = await lookupDict(word);
         if (!dict) {
           popDict.innerHTML = '<div class="pop-nodict">Подробный разбор недоступен для этого слова</div>';
           return;
         }
-        if (dict.phonetic) popPhonetic.textContent = dict.phonetic;
+        if (dict.phonetic) { popPhonetic.textContent = dict.phonetic; currentPhonetic = dict.phonetic; }
         if (dict.audio) { currentAudioUrl = dict.audio; popAudio.disabled = false; }
         else { popAudio.disabled = true; }
 
-        // Собираем определения, переводим их через Google (батчем)
         const defsToTranslate = [];
-        for (const m of dict.meanings) {
-          for (const d of m.defs) {
-            if (d.definition) defsToTranslate.push(d.definition);
-          }
-        }
-
-        // Переводим каждое определение
+        for (const m of dict.meanings) for (const d of m.defs) if (d.definition) defsToTranslate.push(d.definition);
         const translatedDefs = {};
-        await Promise.all(defsToTranslate.map(async (def) => {
-          translatedDefs[def] = await translate(def);
-        }));
+        await Promise.all(defsToTranslate.map(async (def) => { translatedDefs[def] = await translate(def); }));
 
         let html = '';
         for (const m of dict.meanings) {
