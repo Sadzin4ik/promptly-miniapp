@@ -32,14 +32,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, added: false, message: 'already exists', total: vocab.length });
     }
 
-    // новое слово: первое повторение завтра
-    const tomorrow = Date.now() + 24 * 60 * 60 * 1000;
+    // новое слово: доступно к повторению сразу (закрепить в день сохранения)
     vocab.push({
       word: word,
       translation: translation,
       phonetic: phonetic,
       added: Date.now(),
-      nextReview: tomorrow,
+      nextReview: Date.now(),  // готово к повторению сразу
       interval: 1,      // дней
       reps: 0,          // сколько раз успешно повторил
       status: 'new'     // new | learning | learned
