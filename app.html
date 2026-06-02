@@ -290,7 +290,9 @@
   function showCard() {
     if (reviewIndex >= reviewQueue.length) { finishReview(); return; }
     const w = reviewQueue[reviewIndex];
-    document.getElementById('fcProgress').textContent = (reviewIndex+1) + ' / ' + reviewQueue.length;
+    // сколько уникальных слов ещё впереди (включая текущее)
+    const remaining = new Set(reviewQueue.slice(reviewIndex).map(x => x.word)).size;
+    document.getElementById('fcProgress').textContent = 'Осталось: ' + remaining;
     document.getElementById('fcWord').textContent = w.word;
     document.getElementById('fcWordBack').textContent = w.word;
     document.getElementById('fcPhonetic').textContent = w.phonetic || '';
@@ -311,14 +313,22 @@
 
   async function answerCard(known) {
     const w = reviewQueue[reviewIndex];
-    reviewedCount++;
     try {
       await fetch(API + '/api/vocab-review', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ tgId: tgId, word: w.word, known: known })
       });
     } catch(e) {}
-    reviewIndex++;
+
+    if (known) {
+      // знаю — слово засчитано, уходит из сессии
+      reviewedCount++;
+      reviewIndex++;
+    } else {
+      // не знаю — возвращаем слово в конец очереди этой сессии
+      reviewQueue.push(w);
+      reviewIndex++;
+    }
     showCard();
   }
   document.getElementById('fcKnow').addEventListener('click', () => answerCard(true));
@@ -342,7 +352,7 @@
   function finishReview() {
     document.getElementById('fcBody').style.display = 'none';
     document.getElementById('fcDone').style.display = 'flex';
-    document.getElementById('fcDoneText').textContent = 'Повторено слов: ' + reviewedCount;
+    document.getElementById('fcDoneText').textContent = 'Слов закреплено: ' + reviewedCount;
   }
 
   function closeReview() {
