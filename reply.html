@@ -181,6 +181,23 @@
     border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
   }
 
+  /* ===== конструктор ответа (C5) ===== */
+  .constructor { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-top: 4px; opacity: 0; animation: fadeUp 0.5s ease forwards; animation-delay: 0.4s; }
+  .constructor h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .constructor .sub { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; line-height: 1.45; }
+  .own-text { width: 100%; min-height: 84px; background: var(--card-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; color: var(--text); font-family: inherit; font-size: 15px; line-height: 1.5; resize: vertical; outline: none; }
+  .own-text:focus { border-color: var(--accent); }
+  .check-btn { width: 100%; margin-top: 10px; padding: 12px; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform 0.12s, opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .check-btn:active { transform: scale(0.98); }
+  .check-btn:disabled { opacity: 0.6; cursor: default; }
+  .check-result { margin-top: 14px; display: none; }
+  .check-result.show { display: block; animation: fadeUp 0.3s ease forwards; }
+  .cr-block { background: var(--card-2); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .cr-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .cr-text { font-size: 16px; line-height: 1.55; }
+  .cr-ok { color: var(--success); font-weight: 600; }
+  .cr-feedback { font-size: 14px; color: var(--text); line-height: 1.5; }
+
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -491,7 +508,14 @@
         (botMessage ? (
           '<div class="context-card"><div class="ctx-label">📨 Promptly спросил</div><div class="ctx-text">"' + escapeHtml(botMessage) + '"</div></div>'
         ) : '') +
-        variantsHtml;
+        variantsHtml +
+        '<div class="constructor">' +
+          '<h3>✍️ Составь свой ответ</h3>' +
+          '<div class="sub">Напиши ответ сам — я проверю грамматику и подскажу, как звучит естественнее.</div>' +
+          '<textarea class="own-text" id="ownText" placeholder="Type your answer in English..."></textarea>' +
+          '<button class="check-btn" id="checkBtn">Проверить ✨</button>' +
+          '<div class="check-result" id="checkResult"></div>' +
+        '</div>';
 
       initWordPopup();
 
@@ -556,6 +580,55 @@
           }
         });
       });
+
+      // ===== КОНСТРУКТОР ОТВЕТА (C5) =====
+      const checkBtn = document.getElementById('checkBtn');
+      if (checkBtn) {
+        checkBtn.addEventListener('click', async () => {
+          const ta = document.getElementById('ownText');
+          const own = (ta.value || '').trim();
+          const resultBox = document.getElementById('checkResult');
+          if (!own) { showToast('Сначала напиши ответ'); return; }
+          if (!tgId) { showToast('Открой из Telegram'); return; }
+          checkBtn.disabled = true;
+          checkBtn.innerHTML = '<span class="spinner-small"></span>Проверяю';
+          try {
+            const res = await fetch(API + '/api/check', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tgId: tgId, text: own, question: botMessage || '' })
+            });
+            const data = await res.json();
+            if (!data.ok) throw new Error(data.error || 'fail');
+            const corrected = (data.corrected || own).toString();
+            const feedback = (data.feedback || '').toString();
+            const betterRaw = (data.better || '').toString();
+            const better = (betterRaw.trim() && betterRaw.trim().toLowerCase() !== corrected.trim().toLowerCase()) ? betterRaw : '';
+            let html = '';
+            if (data.has_errors) {
+              html += '<div class="cr-block"><div class="cr-label">✅ Исправлено</div><div class="cr-text">' + escapeHtml(corrected) + '</div></div>';
+            } else {
+              html += '<div class="cr-block"><div class="cr-text cr-ok">👍 Грамматика в порядке!</div></div>';
+            }
+            if (better) html += '<div class="cr-block"><div class="cr-label">💬 Звучит естественнее</div><div class="cr-text">' + escapeHtml(better) + '</div></div>';
+            if (feedback) html += '<div class="cr-block"><div class="cr-label">📝 Разбор</div><div class="cr-feedback">' + escapeHtml(feedback) + '</div></div>';
+            html += '<button class="send-btn" id="copyOwn" style="width:100%; justify-content:center;">Скопировать ответ →</button>';
+            resultBox.innerHTML = html;
+            resultBox.classList.add('show');
+            const copyOwn = document.getElementById('copyOwn');
+            if (copyOwn) copyOwn.addEventListener('click', async () => {
+              const toCopy = better || corrected;
+              const ok = await copyToClipboard(toCopy);
+              if (ok) { copyOwn.textContent = 'Скопировано ✓'; copyOwn.classList.add('sent'); showToast('Скопировано — вставь в чат'); }
+              else showToast('Не получилось скопировать');
+            });
+          } catch (e) {
+            showToast('Не удалось проверить, попробуй ещё раз');
+          } finally {
+            checkBtn.disabled = false;
+            checkBtn.innerHTML = 'Проверить ✨';
+          }
+        });
+      }
     }
   }
 </script>
