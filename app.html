@@ -121,6 +121,33 @@
   .soon h2 { font-size:20px; color:var(--text); margin-bottom:8px; }
   .soon p { font-size:14px; }
 
+  /* ПРОГРЕСС */
+  .badge-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .badge-card { border:1px solid var(--border); border-radius:14px; padding:14px 8px; text-align:center; opacity:0; animation:fadeUp 0.4s ease forwards; }
+  .badge-card.on { border-color:rgba(78,201,163,0.3); background:rgba(78,201,163,0.06); }
+  .badge-card.off { background:var(--card-2); }
+  .badge-ico { font-size:26px; margin-bottom:6px; }
+  .badge-card.off .badge-ico { opacity:0.55; }
+  .badge-name { font-size:11px; font-weight:600; line-height:1.25; }
+  .badge-card.off .badge-name { color:var(--text-dim); }
+  .mastery-bar { display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--card-2); margin-bottom:12px; }
+  .mastery-bar .seg { height:100%; transition:width 0.6s ease; }
+  .mastery-bar .seg.new { background:var(--accent); }
+  .mastery-bar .seg.learning { background:var(--warm); }
+  .mastery-bar .seg.learned { background:var(--success); }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--text-dim); }
+  .legend i.dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .legend .dot.new { background:var(--accent); }
+  .legend .dot.learning { background:var(--warm); }
+  .legend .dot.learned { background:var(--success); }
+  .empty-hint { font-size:14px; color:var(--text-dim); line-height:1.5; }
+  .bars { display:flex; align-items:flex-end; justify-content:space-between; gap:8px; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; }
+  .bar-wrap { width:100%; height:100px; display:flex; align-items:flex-end; }
+  .bar-fill { width:100%; background:linear-gradient(180deg,var(--accent),var(--accent-2)); border-radius:6px 6px 0 0; }
+  .bar-num { font-size:12px; font-weight:700; margin-top:5px; min-height:14px; }
+  .bar-lbl { font-size:11px; color:var(--text-dim); margin-top:2px; }
+
   @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
   @keyframes spin { to{transform:rotate(360deg)} }
 </style>
@@ -136,7 +163,7 @@
 </div>
 
 <div class="screen" id="screen-progress">
-  <div class="soon"><div class="big">📈</div><h2>Прогресс</h2><p>Скоро здесь будет детальная<br>статистика твоего обучения</p></div>
+  <div id="progressContent"><div class="loader"><div class="spin"></div><p>Загружаю прогресс...</p></div></div>
 </div>
 
 <!-- Режим карточек -->
@@ -193,6 +220,7 @@
       btn.classList.add('active');
       document.getElementById('screen-' + target).classList.add('active');
       if (target === 'vocab') loadVocab();
+      if (target === 'progress') loadProgress();
     });
   });
 
@@ -266,6 +294,92 @@
         '<div class="section-title">Все слова</div>' + rows;
       const rb = document.getElementById('reviewBtn');
       if (rb) rb.addEventListener('click', startReview);
+    } catch(e) {
+      content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
+    }
+  }
+
+  // ====== ПРОГРЕСС ======
+  async function loadProgress() {
+    const content = document.getElementById('progressContent');
+    if (!tgId) { content.innerHTML = '<div class="soon"><div class="big">🔒</div><h2>Открой из Telegram</h2><p>Прогресс доступен только внутри бота</p></div>'; return; }
+    content.innerHTML = '<div class="loader"><div class="spin"></div><p>Загружаю прогресс...</p></div>';
+    try {
+      const [pRes, vRes] = await Promise.all([
+        fetch(API + '/api/profile?tgId=' + tgId).then(r => r.json()),
+        fetch(API + '/api/vocab?tgId=' + tgId).then(r => r.json())
+      ]);
+      if (!pRes || !pRes.ok) throw new Error('profile');
+      const words = (vRes && vRes.ok && Array.isArray(vRes.words)) ? vRes.words : [];
+      const messages = pRes.messages || 0;
+      const maxStreak = pRes.maxStreak || 0;
+      const totalWords = words.length;
+      const learned = words.filter(w => w.status === 'learned').length;
+      const learning = words.filter(w => w.status === 'learning').length;
+      const fresh = Math.max(0, totalWords - learned - learning);
+
+      const ach = [
+        { ico:'🌱', name:'Первые шаги', earned: messages >= 1 },
+        { ico:'🔥', name:'Серия 3 дня', earned: maxStreak >= 3 },
+        { ico:'🔥', name:'Неделя подряд', earned: maxStreak >= 7 },
+        { ico:'🏆', name:'Месяц подряд', earned: maxStreak >= 30 },
+        { ico:'💬', name:'50 сообщений', earned: messages >= 50 },
+        { ico:'💬', name:'200 сообщений', earned: messages >= 200 },
+        { ico:'📖', name:'10 слов', earned: totalWords >= 10 },
+        { ico:'📖', name:'50 слов', earned: totalWords >= 50 },
+        { ico:'🎓', name:'10 выучено', earned: learned >= 10 }
+      ];
+      const earnedCount = ach.filter(a => a.earned).length;
+      const badgesHtml = ach.map((a, i) =>
+        '<div class="badge-card ' + (a.earned ? 'on' : 'off') + '" style="animation-delay:' + (i * 0.04) + 's">' +
+          '<div class="badge-ico">' + (a.earned ? a.ico : '🔒') + '</div>' +
+          '<div class="badge-name">' + a.name + '</div>' +
+        '</div>').join('');
+
+      let masteryHtml;
+      if (totalWords > 0) {
+        const pct = n => (n / totalWords * 100);
+        masteryHtml =
+          '<div class="mastery-bar">' +
+            '<div class="seg new" style="width:' + pct(fresh) + '%"></div>' +
+            '<div class="seg learning" style="width:' + pct(learning) + '%"></div>' +
+            '<div class="seg learned" style="width:' + pct(learned) + '%"></div>' +
+          '</div>' +
+          '<div class="legend">' +
+            '<span><i class="dot new"></i>Новые: ' + fresh + '</span>' +
+            '<span><i class="dot learning"></i>Учу: ' + learning + '</span>' +
+            '<span><i class="dot learned"></i>Выучено: ' + learned + '</span>' +
+          '</div>';
+      } else {
+        masteryHtml = '<div class="empty-hint">Пока нет сохранённых слов. Сохраняй слова из разбора и подсказок — и здесь появится прогресс по ним.</div>';
+      }
+
+      const weeks = 6;
+      const now = Date.now();
+      const WEEK = 7 * 24 * 60 * 60 * 1000;
+      const buckets = new Array(weeks).fill(0);
+      words.forEach(w => {
+        const t = w.added || 0;
+        if (!t) return;
+        const idx = weeks - 1 - Math.floor((now - t) / WEEK);
+        if (idx >= 0 && idx < weeks) buckets[idx]++;
+      });
+      let maxBucket = 1;
+      buckets.forEach(c => { if (c > maxBucket) maxBucket = c; });
+      const barsHtml = buckets.map((c, i) => {
+        const h = c > 0 ? Math.max(Math.round(c / maxBucket * 100), 8) : 2;
+        const label = (i === weeks - 1) ? 'сейчас' : (weeks - 1 - i) + 'н';
+        return '<div class="bar-col"><div class="bar-wrap"><div class="bar-fill" style="height:' + h + 'px"></div></div>' +
+          '<div class="bar-num">' + (c || '') + '</div><div class="bar-lbl">' + label + '</div></div>';
+      }).join('');
+
+      content.innerHTML =
+        '<div class="section-title">Достижения · ' + earnedCount + ' из ' + ach.length + '</div>' +
+        '<div class="badge-grid">' + badgesHtml + '</div>' +
+        '<div class="section-title">Освоение словаря</div>' +
+        '<div class="stat-card" style="animation-delay:0.05s">' + masteryHtml + '</div>' +
+        '<div class="section-title">Рост словаря по неделям</div>' +
+        '<div class="stat-card" style="animation-delay:0.1s"><div class="bars">' + barsHtml + '</div></div>';
     } catch(e) {
       content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
     }
