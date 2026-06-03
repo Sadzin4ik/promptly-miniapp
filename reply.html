@@ -17,7 +17,7 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
     background: var(--bg); color: var(--text); line-height: 1.55;
-    padding: 20px 16px 40px; min-height: 100vh; -webkit-font-smoothing: antialiased;
+    padding: 20px 16px 120px; min-height: 100vh; -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width: 560px; margin: 0 auto; }
   .header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; opacity: 0; animation: fadeUp 0.5s ease forwards; }
@@ -61,7 +61,12 @@
   .badge.b-easy { background: rgba(78, 201, 163, 0.15); color: var(--success); }
   .badge.b-mid  { background: rgba(94, 181, 247, 0.15); color: var(--accent); }
   .badge.b-hard { background: rgba(247, 185, 85, 0.15); color: var(--warm); }
-  .variant-text { font-size: 17px; line-height: 1.55; margin-bottom: 8px; }
+  .variant-text { font-size: 17px; line-height: 1.7; margin-bottom: 8px; }
+
+  /* кликабельные слова внутри варианта */
+  .word { display: inline; cursor: pointer; border-radius: 5px; padding: 1px 2px; transition: background 0.15s, color 0.15s; }
+  .word:active, .word.active { background: var(--accent); color: #fff; }
+
   .variant-translation {
     font-size: 14px; color: var(--success);
     background: var(--success-bg); padding: 8px 12px;
@@ -121,6 +126,61 @@
     transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); z-index: 200;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ===== всплывающая панель слова (как в voice.html) ===== */
+  .word-popup {
+    position: fixed; left: 0; right: 0; bottom: 0; background: var(--card);
+    border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
+    padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45); transform: translateY(110%);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); z-index: 250;
+    max-height: 78vh; overflow-y: auto;
+  }
+  .word-popup.show { transform: translateY(0); }
+  .pop-close {
+    position: absolute; top: 14px; right: 16px; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--card-2); border: none; color: var(--text-dim); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; z-index: 2;
+  }
+  .pop-top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; padding-right: 40px; }
+  .pop-orig { font-size: 24px; font-weight: 700; }
+  .pop-audio {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(94, 181, 247, 0.15); border: none; color: var(--accent);
+    font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.12s;
+  }
+  .pop-audio:active { transform: scale(0.9); }
+  .pop-audio:disabled { opacity: 0.3; cursor: default; }
+  .pop-phonetic { font-size: 15px; color: var(--text-dim); font-style: italic; }
+  .pop-trans { font-size: 18px; color: var(--success); font-weight: 600; margin-bottom: 14px; min-height: 24px; }
+  .pop-save {
+    width: 100%; padding: 13px; border: none; border-radius: 13px;
+    background: rgba(247, 185, 85, 0.15); color: var(--warm);
+    font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+    margin-bottom: 14px; transition: transform 0.12s, background 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .pop-save:active { transform: scale(0.98); }
+  .pop-save.saved { background: rgba(78, 201, 163, 0.15); color: var(--success); }
+  .pos-group { margin-bottom: 14px; }
+  .pos-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 3px 9px; border-radius: 7px;
+    background: rgba(123, 110, 246, 0.18); color: var(--accent-2); margin-bottom: 8px;
+  }
+  .def-item { margin-bottom: 9px; padding-left: 2px; }
+  .def-text { font-size: 14px; color: var(--text); line-height: 1.5; }
+  .def-example { font-size: 13px; color: var(--text-dim); font-style: italic; margin-top: 3px; }
+  .def-example b { color: var(--accent); font-style: normal; font-weight: 700; }
+  .def-example::before { content: '„'; } .def-example::after { content: '"'; }
+  .pop-loading { color: var(--text-dim); font-size: 14px; padding: 8px 0; }
+  .pop-nodict { color: var(--text-dim); font-size: 13px; font-style: italic; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim);
+    border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+  }
+
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -133,9 +193,24 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<div class="word-popup" id="popup">
+  <button class="pop-close" id="popClose">×</button>
+  <div class="pop-top">
+    <span class="pop-orig" id="popOrig"></span>
+    <button class="pop-audio" id="popAudio" title="Произношение">🔊</button>
+    <span class="pop-phonetic" id="popPhonetic"></span>
+  </div>
+  <div class="pop-trans" id="popTrans"></div>
+  <button class="pop-save" id="popSave">⭐ Сохранить в словарь</button>
+  <div id="popDict"></div>
+</div>
+
 <script>
   const tg = window.Telegram?.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
+  const API = 'https://promptly-miniapp.vercel.app';
+  const tgId = tg?.initDataUnsafe?.user?.id || null;
 
   function getParam(name) {
     const p = new URLSearchParams(window.location.search);
@@ -148,6 +223,7 @@
   const app = document.getElementById('app');
   const toast = document.getElementById('toast');
   const translationCache = {};
+  const dictCache = {};
 
   function showToast(text) {
     toast.textContent = text;
@@ -195,6 +271,178 @@
     }
   }
 
+  // ===== словарь (Free Dictionary API) =====
+  async function lookupDict(word) {
+    const key = word.toLowerCase().trim();
+    if (dictCache[key] !== undefined) return dictCache[key];
+    try {
+      const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(key));
+      if (!res.ok) { dictCache[key] = null; return null; }
+      const data = await res.json();
+      if (!Array.isArray(data) || !data[0]) { dictCache[key] = null; return null; }
+      const entry = data[0];
+      let phonetic = entry.phonetic || '';
+      let audio = '';
+      if (Array.isArray(entry.phonetics)) {
+        for (const p of entry.phonetics) {
+          if (!phonetic && p.text) phonetic = p.text;
+          if (!audio && p.audio) audio = p.audio;
+        }
+      }
+      if (audio && audio.startsWith('//')) audio = 'https:' + audio;
+      const meanings = [];
+      if (Array.isArray(entry.meanings)) {
+        for (const m of entry.meanings.slice(0, 3)) {
+          const defs = [];
+          if (Array.isArray(m.definitions)) {
+            for (const d of m.definitions.slice(0, 2)) {
+              defs.push({ definition: d.definition || '', example: d.example || '' });
+            }
+          }
+          meanings.push({ pos: m.partOfSpeech || '', defs });
+        }
+      }
+      const result = { phonetic, audio, meanings };
+      dictCache[key] = result;
+      return result;
+    } catch(e) { dictCache[key] = null; return null; }
+  }
+
+  const posRu = {
+    'noun':'существительное','verb':'глагол','adjective':'прилагательное','adverb':'наречие',
+    'pronoun':'местоимение','preposition':'предлог','conjunction':'союз','interjection':'междометие',
+    'exclamation':'восклицание','determiner':'определитель','article':'артикль','numeral':'числительное',
+    'intransitive verb':'непереходный глагол','transitive verb':'переходный глагол'
+  };
+
+  function highlightWord(example, word) {
+    const safe = escapeHtml(example);
+    if (!word) return safe;
+    const base = word.toLowerCase().replace(/[^a-z]/g, '');
+    if (base.length < 2) return safe;
+    const re = new RegExp('\\b(' + base + '[a-z]{0,4})\\b', 'gi');
+    return safe.replace(re, '<b>$1</b>');
+  }
+
+  // Превращает обычный текст варианта в кликабельные слова
+  function clickableWords(text) {
+    const tokens = (text || '').split(/(\s+)/);
+    return tokens.map(tok => {
+      if (tok === '' || /^\s+$/.test(tok)) return tok;
+      const clean = tok.replace(/[.,!?;:"'«»()]/g, '');
+      if (!clean) return escapeHtml(tok);
+      return '<span class="word" data-word="' + clean.replace(/"/g, '&quot;') + '">' + escapeHtml(tok) + '</span>';
+    }).join('');
+  }
+
+  // ===== всплывашка слова =====
+  function initWordPopup() {
+    const popup = document.getElementById('popup');
+    const popOrig = document.getElementById('popOrig');
+    const popPhonetic = document.getElementById('popPhonetic');
+    const popTrans = document.getElementById('popTrans');
+    const popDict = document.getElementById('popDict');
+    const popAudio = document.getElementById('popAudio');
+    const popSave = document.getElementById('popSave');
+    let activeWord = null;
+    let currentAudioUrl = '';
+    let currentWord = '';
+    let currentTrans = '';
+    let currentPhonetic = '';
+
+    popAudio.addEventListener('click', () => {
+      if (!currentAudioUrl) return;
+      try { new Audio(currentAudioUrl).play(); } catch(e){}
+    });
+
+    popSave.addEventListener('click', async () => {
+      if (!currentWord) return;
+      if (!tgId) { popSave.textContent = '⚠️ Открой из Telegram'; return; }
+      popSave.disabled = true;
+      popSave.innerHTML = '<span class="spinner"></span> Сохраняю...';
+      try {
+        const res = await fetch(API + '/api/vocab-add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tgId: tgId, word: currentWord, translation: currentTrans, phonetic: currentPhonetic })
+        });
+        const data = await res.json();
+        if (data.ok && data.added) {
+          popSave.classList.add('saved');
+          popSave.textContent = '✓ Добавлено в словарь';
+        } else if (data.ok && !data.added) {
+          popSave.classList.add('saved');
+          popSave.textContent = '✓ Уже в словаре';
+        } else {
+          popSave.textContent = '⚠️ Не получилось';
+          popSave.disabled = false;
+        }
+      } catch(e) {
+        popSave.textContent = '⚠️ Ошибка сети';
+        popSave.disabled = false;
+      }
+    });
+
+    document.querySelectorAll('.word').forEach(el => {
+      el.addEventListener('click', async () => {
+        const word = el.getAttribute('data-word');
+        if (activeWord) activeWord.classList.remove('active');
+        el.classList.add('active');
+        activeWord = el;
+
+        currentWord = word.toLowerCase();
+        currentTrans = '';
+        currentPhonetic = '';
+        popOrig.textContent = word;
+        popPhonetic.textContent = '';
+        popTrans.innerHTML = '<span class="spinner"></span>';
+        popDict.innerHTML = '<div class="pop-loading">Загружаю разбор...</div>';
+        currentAudioUrl = '';
+        popAudio.disabled = true;
+        popSave.disabled = false;
+        popSave.classList.remove('saved');
+        popSave.textContent = '⭐ Сохранить в словарь';
+        popup.classList.add('show');
+
+        translateFallback(word).then(tr => { popTrans.textContent = tr; currentTrans = tr; });
+
+        const dict = await lookupDict(word);
+        if (!dict) {
+          popDict.innerHTML = '<div class="pop-nodict">Подробный разбор недоступен для этого слова</div>';
+          return;
+        }
+        if (dict.phonetic) { popPhonetic.textContent = dict.phonetic; currentPhonetic = dict.phonetic; }
+        if (dict.audio) { currentAudioUrl = dict.audio; popAudio.disabled = false; }
+        else { popAudio.disabled = true; }
+
+        const defsToTranslate = [];
+        for (const m of dict.meanings) for (const d of m.defs) if (d.definition) defsToTranslate.push(d.definition);
+        const translatedDefs = {};
+        await Promise.all(defsToTranslate.map(async (def) => { translatedDefs[def] = await translateFallback(def); }));
+
+        let html = '';
+        for (const m of dict.meanings) {
+          if (!m.defs.length) continue;
+          const posLabel = posRu[m.pos] || m.pos;
+          html += '<div class="pos-group"><span class="pos-tag">' + escapeHtml(posLabel) + '</span>';
+          for (const d of m.defs) {
+            const defRu = translatedDefs[d.definition] || escapeHtml(d.definition);
+            html += '<div class="def-item"><div class="def-text">' + escapeHtml(defRu) + '</div>';
+            if (d.example) html += '<div class="def-example">' + highlightWord(d.example, word) + '</div>';
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+        popDict.innerHTML = html || '<div class="pop-nodict">Определения не найдены</div>';
+      });
+    });
+
+    document.getElementById('popClose').addEventListener('click', () => {
+      popup.classList.remove('show');
+      if (activeWord) { activeWord.classList.remove('active'); activeWord = null; }
+    });
+  }
+
   if (!variantsRaw) {
     app.innerHTML = '<div class="empty"><div class="big">💬</div><h2>Нет данных</h2><p>Открой из голосового сообщения</p></div>';
   } else {
@@ -221,7 +469,7 @@
         return '' +
           '<div class="variant">' +
             '<div class="variant-head"><span class="badge ' + lvl.cls + '">' + lvl.label + '</span></div>' +
-            '<div class="variant-text">' + escapeHtml(text) + '</div>' +
+            '<div class="variant-text">' + clickableWords(text) + '</div>' +
             '<div class="variant-translation" id="tr-' + i + '"></div>' +
             '<div class="actions">' +
               '<button class="translate-btn" data-i="' + i + '">🌐 Перевод</button>' +
@@ -239,11 +487,13 @@
       }).join('');
 
       app.innerHTML =
-        '<div class="header"><div class="dot">💬</div><div><h1>Варианты ответа</h1><p>Выбери, разбери и отправь</p></div></div>' +
+        '<div class="header"><div class="dot">💬</div><div><h1>Варианты ответа</h1><p>Тапни на слово • выбери • отправь</p></div></div>' +
         (botMessage ? (
           '<div class="context-card"><div class="ctx-label">📨 Promptly спросил</div><div class="ctx-text">"' + escapeHtml(botMessage) + '"</div></div>'
         ) : '') +
         variantsHtml;
+
+      initWordPopup();
 
       // Перевод варианта — сначала готовый от GPT, потом fallback Google
       document.querySelectorAll('.translate-btn').forEach(btn => {
