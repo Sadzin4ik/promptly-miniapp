@@ -3,205 +3,207 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Promptly</title>
+<title>Promptly — Подсказка ответа</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --bg:#0f1115; --card:#1a1d24; --card-2:#21252e; --text:#e8eaed;
-    --text-dim:#9aa0aa; --accent:#5eb5f7; --accent-2:#7b6ef6; --success:#4ec9a3;
-    --warm:#f7b955; --fire:#ff7a3c; --danger:#f76e6e; --border:rgba(255,255,255,0.07); --radius:18px;
+    --bg: #0f1115; --card: #1a1d24; --card-2: #21252e; --text: #e8eaed;
+    --text-dim: #9aa0aa; --accent: #5eb5f7; --accent-2: #7b6ef6;
+    --success: #4ec9a3; --success-bg: rgba(78, 201, 163, 0.12);
+    --warm: #f7b955;
+    --border: rgba(255, 255, 255, 0.07); --radius: 18px;
   }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,sans-serif;
-    background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh;
-    -webkit-font-smoothing:antialiased; padding-bottom:78px;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.55;
+    padding: 20px 16px 120px; min-height: 100vh; -webkit-font-smoothing: antialiased;
   }
-  .screen { max-width:560px; margin:0 auto; padding:20px 16px; display:none; }
-  .screen.active { display:block; }
-
-  .hero {
-    background:linear-gradient(135deg,var(--accent),var(--accent-2));
-    border-radius:22px; padding:24px; margin-bottom:16px; position:relative; overflow:hidden;
-    opacity:0; animation:fadeUp 0.5s ease forwards;
+  .wrap { max-width: 560px; margin: 0 auto; }
+  .header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; opacity: 0; animation: fadeUp 0.5s ease forwards; }
+  .header .dot {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    box-shadow: 0 4px 14px rgba(94, 181, 247, 0.3);
   }
-  .hero::after { content:''; position:absolute; right:-30px; top:-30px; width:160px; height:160px; background:rgba(255,255,255,0.12); border-radius:50%; }
-  .hero::before { content:''; position:absolute; right:20px; bottom:-40px; width:110px; height:110px; background:rgba(255,255,255,0.08); border-radius:50%; }
-  .hero-label { font-size:13px; color:rgba(255,255,255,0.85); font-weight:600; letter-spacing:0.3px; margin-bottom:2px; }
-  .hero-streak { font-size:56px; font-weight:800; color:#fff; line-height:1; display:flex; align-items:center; gap:10px; }
-  .hero-streak .fire { font-size:40px; }
-  .hero-days { font-size:14px; color:rgba(255,255,255,0.9); font-weight:600; margin-top:6px; text-transform:uppercase; letter-spacing:0.5px; }
-  .hero-name { font-size:22px; font-weight:800; color:#fff; margin-top:14px; position:relative; z-index:1; }
-  .hero-level { display:inline-block; margin-top:6px; font-size:12px; font-weight:700; color:#fff; background:rgba(255,255,255,0.2); padding:3px 11px; border-radius:8px; text-transform:uppercase; letter-spacing:0.5px; }
-
-  .section-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-dim); margin:18px 4px 12px; }
-  .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; opacity:0; animation:fadeUp 0.5s ease forwards; }
-  .stat-card:nth-child(1){animation-delay:0.05s} .stat-card:nth-child(2){animation-delay:0.1s} .stat-card:nth-child(3){animation-delay:0.15s} .stat-card:nth-child(4){animation-delay:0.2s}
-  .stat-label { font-size:12px; color:var(--text-dim); font-weight:600; margin-bottom:6px; }
-  .stat-value { font-size:28px; font-weight:800; color:var(--text); line-height:1; }
-  .stat-value .unit { font-size:15px; color:var(--text-dim); font-weight:600; }
-  .stat-card.accent .stat-value { color:var(--accent); }
-  .stat-card.success .stat-value { color:var(--success); }
-  .stat-card.warm .stat-value { color:var(--warm); }
-  .correctness-bar { margin-top:8px; height:6px; background:var(--card-2); border-radius:3px; overflow:hidden; }
-  .correctness-fill { height:100%; background:linear-gradient(90deg,var(--success),var(--accent)); border-radius:3px; transition:width 0.8s ease; }
-
-  /* СЛОВАРЬ */
-  .vocab-head { display:flex; gap:12px; margin-bottom:16px; }
-  .vocab-stat { flex:1; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px; text-align:center; }
-  .vocab-stat .num { font-size:30px; font-weight:800; line-height:1; }
-  .vocab-stat .lbl { font-size:12px; color:var(--text-dim); font-weight:600; margin-top:5px; }
-  .vocab-stat.due .num { color:var(--warm); }
-  .vocab-stat.total .num { color:var(--accent); }
-  .review-btn {
-    width:100%; padding:16px; border:none; border-radius:15px; font-family:inherit;
-    background:linear-gradient(135deg,var(--warm),var(--fire)); color:#fff;
-    font-size:16px; font-weight:700; cursor:pointer; margin-bottom:18px;
-    transition:transform 0.12s; box-shadow:0 4px 16px rgba(247,122,60,0.3);
+  .header h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+  .header p { font-size: 13px; color: var(--text-dim); margin-top: 1px; }
+  .context-card {
+    background: var(--card-2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 18px;
+    font-size: 14px; color: var(--text-dim);
+    opacity: 0; animation: fadeUp 0.5s ease forwards; animation-delay: 0.08s;
   }
-  .review-btn:active { transform:scale(0.98); }
-  .review-btn:disabled { background:var(--card-2); color:var(--text-dim); box-shadow:none; cursor:default; }
-
-  .word-row {
-    display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border);
-    border-radius:14px; padding:13px 15px; margin-bottom:9px; opacity:0; animation:fadeUp 0.4s ease forwards;
+  .context-card .ctx-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--text-dim); margin-bottom: 4px;
   }
-  .word-row .w-main { flex:1; min-width:0; }
-  .word-row .w-en { font-size:16px; font-weight:700; }
-  .word-row .w-ru { font-size:13px; color:var(--text-dim); margin-top:2px; }
-  .word-row .w-status { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; padding:3px 8px; border-radius:6px; white-space:nowrap; }
-  .w-status.new { background:rgba(94,181,247,0.16); color:var(--accent); }
-  .w-status.learning { background:rgba(247,185,85,0.16); color:var(--warm); }
-  .w-status.learned { background:rgba(78,201,163,0.16); color:var(--success); }
-
-  /* РЕЖИМ КАРТОЧЕК */
-  .flashcard-overlay {
-    position:fixed; inset:0; background:var(--bg); z-index:200; display:none;
-    flex-direction:column; padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+  .context-card .ctx-text { color: var(--text); font-style: italic; }
+  .variant {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 14px;
+    opacity: 0; animation: fadeUp 0.5s ease forwards;
   }
-  .flashcard-overlay.show { display:flex; }
-  .fc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-  .fc-progress { font-size:14px; color:var(--text-dim); font-weight:600; }
-  .fc-close { width:34px; height:34px; border-radius:50%; background:var(--card); border:none; color:var(--text-dim); font-size:20px; cursor:pointer; }
-  .fc-card {
-    flex:1; background:var(--card); border:1px solid var(--border); border-radius:24px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:30px; cursor:pointer; position:relative; margin-bottom:18px; text-align:center;
-    transition:transform 0.15s;
+  .variant:nth-of-type(1) { animation-delay: 0.16s; }
+  .variant:nth-of-type(2) { animation-delay: 0.24s; }
+  .variant:nth-of-type(3) { animation-delay: 0.32s; }
+  .variant-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
   }
-  .fc-card:active { transform:scale(0.99); }
-  .fc-word { font-size:38px; font-weight:800; }
-  .fc-phonetic { font-size:17px; color:var(--text-dim); font-style:italic; margin-top:10px; }
-  .fc-flip-hint { position:absolute; bottom:22px; font-size:13px; color:var(--text-dim); }
-  .fc-divider { width:50px; height:3px; background:var(--border); border-radius:2px; margin:20px 0; }
-  .fc-translation { font-size:26px; font-weight:700; color:var(--success); }
-  .fc-audio { margin-top:16px; width:46px; height:46px; border-radius:50%; background:rgba(94,181,247,0.15); border:none; color:var(--accent); font-size:20px; cursor:pointer; }
-  .fc-actions { display:flex; gap:12px; }
-  .fc-btn { flex:1; padding:18px; border:none; border-radius:16px; font-family:inherit; font-size:16px; font-weight:700; cursor:pointer; transition:transform 0.12s; }
-  .fc-btn:active { transform:scale(0.97); }
-  .fc-btn.dont { background:rgba(247,110,110,0.16); color:var(--danger); }
-  .fc-btn.know { background:rgba(78,201,163,0.16); color:var(--success); }
-  .fc-done { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-  .fc-done .big { font-size:60px; margin-bottom:18px; }
-  .fc-done h2 { font-size:24px; margin-bottom:10px; }
-  .fc-done p { color:var(--text-dim); font-size:15px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 4px 10px; border-radius: 8px;
+    text-transform: uppercase;
+  }
+  .badge.b-easy { background: rgba(78, 201, 163, 0.15); color: var(--success); }
+  .badge.b-mid  { background: rgba(94, 181, 247, 0.15); color: var(--accent); }
+  .badge.b-hard { background: rgba(247, 185, 85, 0.15); color: var(--warm); }
+  .variant-text { font-size: 17px; line-height: 1.7; margin-bottom: 8px; }
 
-  .navbar { position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--border); display:flex; justify-content:space-around; padding:10px 0 calc(10px + env(safe-area-inset-bottom)); z-index:50; }
-  .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; cursor:pointer; color:var(--text-dim); font-family:inherit; transition:color 0.15s; }
-  .nav-item.active { color:var(--accent); }
-  .nav-icon { font-size:21px; }
-  .nav-label { font-size:11px; font-weight:600; }
+  /* кликабельные слова внутри варианта */
+  .word { display: inline; cursor: pointer; border-radius: 5px; padding: 1px 2px; transition: background 0.15s, color 0.15s; }
+  .word:active, .word.active { background: var(--accent); color: #fff; }
 
-  .loader { text-align:center; padding:70px 20px; }
-  .loader .spin { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; margin:0 auto 14px; animation:spin 0.8s linear infinite; }
-  .loader p { color:var(--text-dim); font-size:14px; }
-  .soon { text-align:center; padding:80px 24px; color:var(--text-dim); }
-  .soon .big { font-size:48px; margin-bottom:16px; }
-  .soon h2 { font-size:20px; color:var(--text); margin-bottom:8px; }
-  .soon p { font-size:14px; }
+  .variant-translation {
+    font-size: 14px; color: var(--success);
+    background: var(--success-bg); padding: 8px 12px;
+    border-radius: 9px; margin-bottom: 12px;
+    display: none; line-height: 1.5;
+  }
+  .variant-translation.show { display: block; animation: fadeUp 0.3s ease forwards; }
+  .toggle-btn, .send-btn, .translate-btn {
+    border: none; font-family: inherit; font-size: 13px; font-weight: 600;
+    border-radius: 11px; cursor: pointer; padding: 9px 14px;
+    transition: transform 0.12s, opacity 0.15s, background 0.15s;
+  }
+  .toggle-btn, .translate-btn { background: var(--card-2); color: var(--text-dim); }
+  .toggle-btn:active, .translate-btn:active { transform: scale(0.97); }
+  .toggle-btn.open { background: rgba(94, 181, 247, 0.18); color: var(--accent); }
+  .translate-btn.active { background: rgba(78, 201, 163, 0.18); color: var(--success); }
+  .send-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; padding: 9px 16px;
+  }
+  .send-btn:active { transform: scale(0.97); }
+  .send-btn.sent { background: var(--success); }
+  .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .spinner-small {
+    display: inline-block; width: 11px; height: 11px;
+    border: 2px solid currentColor; border-top-color: transparent;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 4px;
+  }
+  .breakdown {
+    margin-top: 14px; background: var(--card-2); border-radius: 12px;
+    padding: 0 14px; max-height: 0; overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+  }
+  .breakdown.show { max-height: 1000px; padding: 14px; }
+  .breakdown h4 {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 8px;
+  }
+  .breakdown p { font-size: 14px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
+  .breakdown p:last-child { margin-bottom: 0; }
+  .loader { text-align: center; padding: 60px 20px; opacity: 0; animation: fadeUp 0.5s ease forwards; }
+  .loader .spinner-big {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; margin: 0 auto 16px; animation: spin 0.8s linear infinite;
+  }
+  .loader p { color: var(--text-dim); font-size: 14px; }
+  .empty { text-align: center; padding: 50px 20px; color: var(--text-dim); opacity: 0; animation: fadeUp 0.5s ease forwards; }
+  .empty .big { font-size: 46px; margin-bottom: 14px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120%);
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); font-size: 14px; font-weight: 500;
+    padding: 12px 18px; border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); z-index: 200;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
 
-  /* ПРОГРЕСС */
-  .badge-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-  .badge-card { border:1px solid var(--border); border-radius:14px; padding:14px 8px; text-align:center; opacity:0; animation:fadeUp 0.4s ease forwards; }
-  .badge-card.on { border-color:rgba(78,201,163,0.3); background:rgba(78,201,163,0.06); }
-  .badge-card.off { background:var(--card-2); }
-  .badge-ico { font-size:26px; margin-bottom:6px; }
-  .badge-card.off .badge-ico { opacity:0.55; }
-  .badge-name { font-size:11px; font-weight:600; line-height:1.25; }
-  .badge-card.off .badge-name { color:var(--text-dim); }
-  .mastery-bar { display:flex; height:14px; border-radius:7px; overflow:hidden; background:var(--card-2); margin-bottom:12px; }
-  .mastery-bar .seg { height:100%; transition:width 0.6s ease; }
-  .mastery-bar .seg.new { background:var(--accent); }
-  .mastery-bar .seg.learning { background:var(--warm); }
-  .mastery-bar .seg.learned { background:var(--success); }
-  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--text-dim); }
-  .legend i.dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:middle; }
-  .legend .dot.new { background:var(--accent); }
-  .legend .dot.learning { background:var(--warm); }
-  .legend .dot.learned { background:var(--success); }
-  .empty-hint { font-size:14px; color:var(--text-dim); line-height:1.5; }
-  .bars { display:flex; align-items:flex-end; justify-content:space-between; gap:8px; }
-  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; }
-  .bar-wrap { width:100%; height:100px; display:flex; align-items:flex-end; }
-  .bar-fill { width:100%; background:linear-gradient(180deg,var(--accent),var(--accent-2)); border-radius:6px 6px 0 0; }
-  .bar-num { font-size:12px; font-weight:700; margin-top:5px; min-height:14px; }
-  .bar-lbl { font-size:11px; color:var(--text-dim); margin-top:2px; }
+  /* ===== всплывающая панель слова (как в voice.html) ===== */
+  .word-popup {
+    position: fixed; left: 0; right: 0; bottom: 0; background: var(--card);
+    border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
+    padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45); transform: translateY(110%);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); z-index: 250;
+    max-height: 78vh; overflow-y: auto;
+  }
+  .word-popup.show { transform: translateY(0); }
+  .pop-close {
+    position: absolute; top: 14px; right: 16px; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--card-2); border: none; color: var(--text-dim); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; z-index: 2;
+  }
+  .pop-top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; padding-right: 40px; }
+  .pop-orig { font-size: 24px; font-weight: 700; }
+  .pop-audio {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(94, 181, 247, 0.15); border: none; color: var(--accent);
+    font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.12s;
+  }
+  .pop-audio:active { transform: scale(0.9); }
+  .pop-audio:disabled { opacity: 0.3; cursor: default; }
+  .pop-phonetic { font-size: 15px; color: var(--text-dim); font-style: italic; }
+  .pop-trans { font-size: 18px; color: var(--success); font-weight: 600; margin-bottom: 14px; min-height: 24px; }
+  .pop-save {
+    width: 100%; padding: 13px; border: none; border-radius: 13px;
+    background: rgba(247, 185, 85, 0.15); color: var(--warm);
+    font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+    margin-bottom: 14px; transition: transform 0.12s, background 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .pop-save:active { transform: scale(0.98); }
+  .pop-save.saved { background: rgba(78, 201, 163, 0.15); color: var(--success); }
+  .pos-group { margin-bottom: 14px; }
+  .pos-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 3px 9px; border-radius: 7px;
+    background: rgba(123, 110, 246, 0.18); color: var(--accent-2); margin-bottom: 8px;
+  }
+  .def-item { margin-bottom: 9px; padding-left: 2px; }
+  .def-text { font-size: 14px; color: var(--text); line-height: 1.5; }
+  .def-example { font-size: 13px; color: var(--text-dim); font-style: italic; margin-top: 3px; }
+  .def-example b { color: var(--accent); font-style: normal; font-weight: 700; }
+  .def-example::before { content: '„'; } .def-example::after { content: '"'; }
+  .pop-loading { color: var(--text-dim); font-size: 14px; padding: 8px 0; }
+  .pop-nodict { color: var(--text-dim); font-size: 13px; font-style: italic; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim);
+    border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+  }
 
-  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes spin { to{transform:rotate(360deg)} }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-
-<div class="screen active" id="screen-profile">
-  <div id="profileContent"><div class="loader"><div class="spin"></div><p>Загружаю профиль...</p></div></div>
-</div>
-
-<div class="screen" id="screen-vocab">
-  <div id="vocabContent"><div class="loader"><div class="spin"></div><p>Загружаю словарь...</p></div></div>
-</div>
-
-<div class="screen" id="screen-progress">
-  <div id="progressContent"><div class="loader"><div class="spin"></div><p>Загружаю прогресс...</p></div></div>
-</div>
-
-<!-- Режим карточек -->
-<div class="flashcard-overlay" id="flashcards">
-  <div class="fc-top">
-    <span class="fc-progress" id="fcProgress">0 / 0</span>
-    <button class="fc-close" id="fcClose">×</button>
-  </div>
-  <div id="fcBody" style="flex:1; display:flex; flex-direction:column;">
-    <div class="fc-card" id="fcCard">
-      <div id="fcFront">
-        <div class="fc-word" id="fcWord"></div>
-        <div class="fc-phonetic" id="fcPhonetic"></div>
-        <div class="fc-flip-hint">Нажми чтобы перевернуть</div>
-      </div>
-      <div id="fcBack" style="display:none; text-align:center;">
-        <div class="fc-word" id="fcWordBack"></div>
-        <div class="fc-divider" style="margin:18px auto;"></div>
-        <div class="fc-translation" id="fcTranslation"></div>
-        <button class="fc-audio" id="fcAudio">🔊</button>
-      </div>
-    </div>
-    <div class="fc-actions" id="fcActions" style="display:none;">
-      <button class="fc-btn dont" id="fcDont">Не знаю</button>
-      <button class="fc-btn know" id="fcKnow">Знаю</button>
-    </div>
-  </div>
-  <div class="fc-done" id="fcDone" style="display:none;">
-    <div class="big">🎉</div>
-    <h2>Повторение завершено!</h2>
-    <p id="fcDoneText">Отличная работа</p>
+<div class="wrap" id="app">
+  <div class="loader">
+    <div class="spinner-big"></div>
+    <p>Подбираю варианты ответа...</p>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
-<div class="navbar">
-  <button class="nav-item active" data-screen="profile"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></button>
-  <button class="nav-item" data-screen="vocab"><span class="nav-icon">📚</span><span class="nav-label">Словарь</span></button>
-  <button class="nav-item" data-screen="progress"><span class="nav-icon">📈</span><span class="nav-label">Прогресс</span></button>
+<div class="word-popup" id="popup">
+  <button class="pop-close" id="popClose">×</button>
+  <div class="pop-top">
+    <span class="pop-orig" id="popOrig"></span>
+    <button class="pop-audio" id="popAudio" title="Произношение">🔊</button>
+    <span class="pop-phonetic" id="popPhonetic"></span>
+  </div>
+  <div class="pop-trans" id="popTrans"></div>
+  <button class="pop-save" id="popSave">⭐ Сохранить в словарь</button>
+  <div id="popDict"></div>
 </div>
 
 <script>
@@ -210,272 +212,352 @@
   const API = 'https://promptly-miniapp.vercel.app';
   const tgId = tg?.initDataUnsafe?.user?.id || null;
 
-  let vocabLoaded = false;
+  function getParam(name) {
+    const p = new URLSearchParams(window.location.search);
+    const val = p.get(name);
+    return val ? decodeURIComponent(val) : '';
+  }
 
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.getAttribute('data-screen');
-      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('screen-' + target).classList.add('active');
-      if (target === 'vocab') loadVocab();
-      if (target === 'progress') loadProgress();
-    });
-  });
+  const botMessage = getParam('bot');
+  const variantsRaw = getParam('variants');
+  const app = document.getElementById('app');
+  const toast = document.getElementById('toast');
+  const translationCache = {};
+  const dictCache = {};
 
-  const levelRu = { beginner:'Начальный', intermediate:'Средний', advanced:'Продвинутый' };
-  function pluralDays(n){const a=Math.abs(n)%100;const b=a%10;if(a>10&&a<20)return'дней';if(b>1&&b<5)return'дня';if(b===1)return'день';return'дней';}
-  function pluralWords(n){const a=Math.abs(n)%100;const b=a%10;if(a>10&&a<20)return'слов';if(b>1&&b<5)return'слова';if(b===1)return'слово';return'слов';}
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  async function translateGoogle(text) {
+    const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=' +
+      encodeURIComponent(text);
+    const res = await fetch(url);
+    const data = await res.json();
+    if (Array.isArray(data) && Array.isArray(data[0])) {
+      return data[0].map(chunk => chunk[0]).join('');
+    }
+    return '';
+  }
+  async function translateMyMemory(text) {
+    const url = 'https://api.mymemory.translated.net/get?q=' +
+      encodeURIComponent(text) + '&langpair=en|ru&de=promptly@example.com';
+    const res = await fetch(url);
+    const data = await res.json();
+    return data?.responseData?.translatedText || '';
+  }
+  async function translateFallback(text) {
+    const key = text.toLowerCase().trim();
+    if (translationCache[key]) return translationCache[key];
+    let result = '';
+    try { result = await translateGoogle(text); } catch(e) {}
+    if (!result) { try { result = await translateMyMemory(text); } catch(e) {} }
+    if (!result) result = '(перевод недоступен)';
+    translationCache[key] = result;
+    return result;
+  }
+  async function copyToClipboard(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); document.body.removeChild(ta); return true; }
+      catch (e2) { document.body.removeChild(ta); return false; }
+    }
+  }
 
-  // ====== ПРОФИЛЬ ======
-  async function loadProfile() {
-    const content = document.getElementById('profileContent');
-    if (!tgId) { content.innerHTML = '<div class="soon"><div class="big">🔒</div><h2>Открой из Telegram</h2><p>Профиль доступен только внутри бота</p></div>'; return; }
+  // ===== словарь (Free Dictionary API) =====
+  async function lookupDict(word) {
+    const key = word.toLowerCase().trim();
+    if (dictCache[key] !== undefined) return dictCache[key];
     try {
-      const res = await fetch(API + '/api/profile?tgId=' + tgId);
+      const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(key));
+      if (!res.ok) { dictCache[key] = null; return null; }
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'fail');
-      const corr = data.correctness || 0;
-      content.innerHTML =
-        '<div class="hero"><div class="hero-label">ГОВОРЮ НА ENGLISH</div>' +
-          '<div class="hero-streak"><span class="fire">🔥</span>' + (data.streak||0) + '</div>' +
-          '<div class="hero-days">' + (data.streak===1?'день подряд':'дней подряд') + '</div>' +
-          '<div class="hero-name">' + (data.name||'Друг') + '</div>' +
-          '<div class="hero-level">' + (levelRu[data.level]||data.level||'Начальный') + '</div></div>' +
-        '<div class="section-title">Общая активность</div>' +
-        '<div class="stat-grid">' +
-          '<div class="stat-card warm"><div class="stat-label">Рекорд серии</div><div class="stat-value">' + (data.maxStreak||0) + ' <span class="unit">' + pluralDays(data.maxStreak||0) + '</span></div></div>' +
-          '<div class="stat-card accent"><div class="stat-label">Дней с Promptly</div><div class="stat-value">' + (data.daysSinceStart||0) + ' <span class="unit">' + pluralDays(data.daysSinceStart||0) + '</span></div></div>' +
-          '<div class="stat-card"><div class="stat-label">Сообщений</div><div class="stat-value">' + (data.messages||0) + '</div></div>' +
-          '<div class="stat-card"><div class="stat-label">Слов написано</div><div class="stat-value">' + (data.words||0) + '</div></div>' +
-        '</div>' +
-        '<div class="section-title">Точность речи</div>' +
-        '<div class="stat-card success" style="animation-delay:0.3s"><div class="stat-label">Сообщений без ошибок</div>' +
-          '<div class="stat-value">' + corr + '<span class="unit">%</span></div>' +
-          '<div class="correctness-bar"><div class="correctness-fill" id="corrFill" style="width:0%"></div></div></div>';
-      setTimeout(() => { const f = document.getElementById('corrFill'); if (f) f.style.width = corr + '%'; }, 200);
-    } catch(e) {
-      content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
-    }
-  }
-
-  // ====== СЛОВАРЬ ======
-  let allWords = [];
-  async function loadVocab() {
-    const content = document.getElementById('vocabContent');
-    if (!tgId) { content.innerHTML = '<div class="soon"><div class="big">🔒</div><h2>Открой из Telegram</h2><p>Словарь доступен только внутри бота</p></div>'; return; }
-    content.innerHTML = '<div class="loader"><div class="spin"></div><p>Загружаю словарь...</p></div>';
-    try {
-      const res = await fetch(API + '/api/vocab?tgId=' + tgId);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error||'fail');
-      allWords = data.words || [];
-      if (allWords.length === 0) {
-        content.innerHTML = '<div class="soon"><div class="big">📚</div><h2>Словарь пуст</h2><p>Сохраняй слова из разбора голосовых<br>и подсказок — они появятся здесь</p></div>';
-        return;
-      }
-      const statusRu = { new:'новое', learning:'учится', learned:'выучено' };
-      let rows = '';
-      allWords.forEach((w, i) => {
-        const st = w.status || 'new';
-        rows += '<div class="word-row" style="animation-delay:' + (i*0.03) + 's">' +
-          '<div class="w-main"><div class="w-en">' + (w.word||'') + '</div><div class="w-ru">' + (w.translation||'') + '</div></div>' +
-          '<span class="w-status ' + st + '">' + (statusRu[st]||st) + '</span></div>';
-      });
-      content.innerHTML =
-        '<div class="vocab-head">' +
-          '<div class="vocab-stat total"><div class="num">' + data.total + '</div><div class="lbl">' + pluralWords(data.total) + ' всего</div></div>' +
-          '<div class="vocab-stat due"><div class="num">' + data.due + '</div><div class="lbl">к повторению</div></div>' +
-        '</div>' +
-        (data.due > 0
-          ? '<button class="review-btn" id="reviewBtn">🔥 Повторять (' + data.due + ')</button>'
-          : '<button class="review-btn" disabled>Сегодня всё повторено 👌</button>') +
-        '<div class="section-title">Все слова</div>' + rows;
-      const rb = document.getElementById('reviewBtn');
-      if (rb) rb.addEventListener('click', startReview);
-    } catch(e) {
-      content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
-    }
-  }
-
-  // ====== ПРОГРЕСС ======
-  async function loadProgress() {
-    const content = document.getElementById('progressContent');
-    if (!tgId) { content.innerHTML = '<div class="soon"><div class="big">🔒</div><h2>Открой из Telegram</h2><p>Прогресс доступен только внутри бота</p></div>'; return; }
-    content.innerHTML = '<div class="loader"><div class="spin"></div><p>Загружаю прогресс...</p></div>';
-    try {
-      const [pRes, vRes] = await Promise.all([
-        fetch(API + '/api/profile?tgId=' + tgId).then(r => r.json()),
-        fetch(API + '/api/vocab?tgId=' + tgId).then(r => r.json())
-      ]);
-      if (!pRes || !pRes.ok) throw new Error('profile');
-      const words = (vRes && vRes.ok && Array.isArray(vRes.words)) ? vRes.words : [];
-      const messages = pRes.messages || 0;
-      const maxStreak = pRes.maxStreak || 0;
-      const totalWords = words.length;
-      const learned = words.filter(w => w.status === 'learned').length;
-      const learning = words.filter(w => w.status === 'learning').length;
-      const fresh = Math.max(0, totalWords - learned - learning);
-
-      const ach = [
-        { ico:'🌱', name:'Первые шаги', earned: messages >= 1 },
-        { ico:'🔥', name:'Серия 3 дня', earned: maxStreak >= 3 },
-        { ico:'🔥', name:'Неделя подряд', earned: maxStreak >= 7 },
-        { ico:'🏆', name:'Месяц подряд', earned: maxStreak >= 30 },
-        { ico:'💬', name:'50 сообщений', earned: messages >= 50 },
-        { ico:'💬', name:'200 сообщений', earned: messages >= 200 },
-        { ico:'📖', name:'10 слов', earned: totalWords >= 10 },
-        { ico:'📖', name:'50 слов', earned: totalWords >= 50 },
-        { ico:'🎓', name:'10 выучено', earned: learned >= 10 }
-      ];
-      const earnedCount = ach.filter(a => a.earned).length;
-      const badgesHtml = ach.map((a, i) =>
-        '<div class="badge-card ' + (a.earned ? 'on' : 'off') + '" style="animation-delay:' + (i * 0.04) + 's">' +
-          '<div class="badge-ico">' + (a.earned ? a.ico : '🔒') + '</div>' +
-          '<div class="badge-name">' + a.name + '</div>' +
-        '</div>').join('');
-
-      let masteryHtml;
-      if (totalWords > 0) {
-        const pct = n => (n / totalWords * 100);
-        masteryHtml =
-          '<div class="mastery-bar">' +
-            '<div class="seg new" style="width:' + pct(fresh) + '%"></div>' +
-            '<div class="seg learning" style="width:' + pct(learning) + '%"></div>' +
-            '<div class="seg learned" style="width:' + pct(learned) + '%"></div>' +
-          '</div>' +
-          '<div class="legend">' +
-            '<span><i class="dot new"></i>Новые: ' + fresh + '</span>' +
-            '<span><i class="dot learning"></i>Учу: ' + learning + '</span>' +
-            '<span><i class="dot learned"></i>Выучено: ' + learned + '</span>' +
-          '</div>';
-      } else {
-        masteryHtml = '<div class="empty-hint">Пока нет сохранённых слов. Сохраняй слова из разбора и подсказок — и здесь появится прогресс по ним.</div>';
-      }
-
-      const weeks = 6;
-      const now = Date.now();
-      const WEEK = 7 * 24 * 60 * 60 * 1000;
-      const buckets = new Array(weeks).fill(0);
-      words.forEach(w => {
-        const t = w.added || 0;
-        if (!t) return;
-        const idx = weeks - 1 - Math.floor((now - t) / WEEK);
-        if (idx >= 0 && idx < weeks) buckets[idx]++;
-      });
-      let maxBucket = 1;
-      buckets.forEach(c => { if (c > maxBucket) maxBucket = c; });
-      const barsHtml = buckets.map((c, i) => {
-        const h = c > 0 ? Math.max(Math.round(c / maxBucket * 100), 8) : 2;
-        const label = (i === weeks - 1) ? 'сейчас' : (weeks - 1 - i) + 'н';
-        return '<div class="bar-col"><div class="bar-wrap"><div class="bar-fill" style="height:' + h + 'px"></div></div>' +
-          '<div class="bar-num">' + (c || '') + '</div><div class="bar-lbl">' + label + '</div></div>';
-      }).join('');
-
-      content.innerHTML =
-        '<div class="section-title">Достижения · ' + earnedCount + ' из ' + ach.length + '</div>' +
-        '<div class="badge-grid">' + badgesHtml + '</div>' +
-        '<div class="section-title">Освоение словаря</div>' +
-        '<div class="stat-card" style="animation-delay:0.05s">' + masteryHtml + '</div>' +
-        '<div class="section-title">Рост словаря по неделям</div>' +
-        '<div class="stat-card" style="animation-delay:0.1s"><div class="bars">' + barsHtml + '</div></div>';
-    } catch(e) {
-      content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
-    }
-  }
-
-  // ====== РЕЖИМ КАРТОЧЕК ======
-  let reviewQueue = [];
-  let reviewIndex = 0;
-  let reviewedCount = 0;
-
-  function startReview() {
-    const now = Date.now();
-    reviewQueue = allWords.filter(w => (w.nextReview||0) <= now);
-    if (reviewQueue.length === 0) return;
-    reviewIndex = 0; reviewedCount = 0;
-    document.getElementById('flashcards').classList.add('show');
-    document.getElementById('fcDone').style.display = 'none';
-    document.getElementById('fcBody').style.display = 'flex';
-    showCard();
-  }
-
-  function showCard() {
-    if (reviewIndex >= reviewQueue.length) { finishReview(); return; }
-    const w = reviewQueue[reviewIndex];
-    // сколько уникальных слов ещё впереди (включая текущее)
-    const remaining = new Set(reviewQueue.slice(reviewIndex).map(x => x.word)).size;
-    document.getElementById('fcProgress').textContent = 'Осталось: ' + remaining;
-    document.getElementById('fcWord').textContent = w.word;
-    document.getElementById('fcWordBack').textContent = w.word;
-    document.getElementById('fcPhonetic').textContent = w.phonetic || '';
-    document.getElementById('fcTranslation').textContent = w.translation || '(нет перевода)';
-    document.getElementById('fcFront').style.display = 'block';
-    document.getElementById('fcBack').style.display = 'none';
-    document.getElementById('fcActions').style.display = 'none';
-  }
-
-  document.getElementById('fcCard').addEventListener('click', () => {
-    const back = document.getElementById('fcBack');
-    if (back.style.display === 'none') {
-      document.getElementById('fcFront').style.display = 'none';
-      back.style.display = 'block';
-      document.getElementById('fcActions').style.display = 'flex';
-    }
-  });
-
-  async function answerCard(known) {
-    const w = reviewQueue[reviewIndex];
-    try {
-      await fetch(API + '/api/vocab-review', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ tgId: tgId, word: w.word, known: known })
-      });
-    } catch(e) {}
-
-    if (known) {
-      // знаю — слово засчитано, уходит из сессии
-      reviewedCount++;
-      reviewIndex++;
-    } else {
-      // не знаю — возвращаем слово в конец очереди этой сессии
-      reviewQueue.push(w);
-      reviewIndex++;
-    }
-    showCard();
-  }
-  document.getElementById('fcKnow').addEventListener('click', () => answerCard(true));
-  document.getElementById('fcDont').addEventListener('click', () => answerCard(false));
-
-  document.getElementById('fcAudio').addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const w = reviewQueue[reviewIndex];
-    try {
-      const res = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w.word));
-      const data = await res.json();
+      if (!Array.isArray(data) || !data[0]) { dictCache[key] = null; return null; }
+      const entry = data[0];
+      let phonetic = entry.phonetic || '';
       let audio = '';
-      if (Array.isArray(data) && data[0] && Array.isArray(data[0].phonetics)) {
-        for (const p of data[0].phonetics) if (p.audio) { audio = p.audio; break; }
+      if (Array.isArray(entry.phonetics)) {
+        for (const p of entry.phonetics) {
+          if (!phonetic && p.text) phonetic = p.text;
+          if (!audio && p.audio) audio = p.audio;
+        }
       }
       if (audio && audio.startsWith('//')) audio = 'https:' + audio;
-      if (audio) new Audio(audio).play();
-    } catch(err) {}
-  });
-
-  function finishReview() {
-    document.getElementById('fcBody').style.display = 'none';
-    document.getElementById('fcDone').style.display = 'flex';
-    document.getElementById('fcDoneText').textContent = 'Слов закреплено: ' + reviewedCount;
+      const meanings = [];
+      if (Array.isArray(entry.meanings)) {
+        for (const m of entry.meanings.slice(0, 3)) {
+          const defs = [];
+          if (Array.isArray(m.definitions)) {
+            for (const d of m.definitions.slice(0, 2)) {
+              defs.push({ definition: d.definition || '', example: d.example || '' });
+            }
+          }
+          meanings.push({ pos: m.partOfSpeech || '', defs });
+        }
+      }
+      const result = { phonetic, audio, meanings };
+      dictCache[key] = result;
+      return result;
+    } catch(e) { dictCache[key] = null; return null; }
   }
 
-  function closeReview() {
-    document.getElementById('flashcards').classList.remove('show');
-    loadVocab(); // обновляем список
-  }
-  document.getElementById('fcClose').addEventListener('click', closeReview);
+  const posRu = {
+    'noun':'существительное','verb':'глагол','adjective':'прилагательное','adverb':'наречие',
+    'pronoun':'местоимение','preposition':'предлог','conjunction':'союз','interjection':'междометие',
+    'exclamation':'восклицание','determiner':'определитель','article':'артикль','numeral':'числительное',
+    'intransitive verb':'непереходный глагол','transitive verb':'переходный глагол'
+  };
 
-  loadProfile();
+  function highlightWord(example, word) {
+    const safe = escapeHtml(example);
+    if (!word) return safe;
+    const base = word.toLowerCase().replace(/[^a-z]/g, '');
+    if (base.length < 2) return safe;
+    const re = new RegExp('\\b(' + base + '[a-z]{0,4})\\b', 'gi');
+    return safe.replace(re, '<b>$1</b>');
+  }
+
+  // Превращает обычный текст варианта в кликабельные слова
+  function clickableWords(text) {
+    const tokens = (text || '').split(/(\s+)/);
+    return tokens.map(tok => {
+      if (tok === '' || /^\s+$/.test(tok)) return tok;
+      const clean = tok.replace(/[.,!?;:"'«»()]/g, '');
+      if (!clean) return escapeHtml(tok);
+      return '<span class="word" data-word="' + clean.replace(/"/g, '&quot;') + '">' + escapeHtml(tok) + '</span>';
+    }).join('');
+  }
+
+  // ===== всплывашка слова =====
+  function initWordPopup() {
+    const popup = document.getElementById('popup');
+    const popOrig = document.getElementById('popOrig');
+    const popPhonetic = document.getElementById('popPhonetic');
+    const popTrans = document.getElementById('popTrans');
+    const popDict = document.getElementById('popDict');
+    const popAudio = document.getElementById('popAudio');
+    const popSave = document.getElementById('popSave');
+    let activeWord = null;
+    let currentAudioUrl = '';
+    let currentWord = '';
+    let currentTrans = '';
+    let currentPhonetic = '';
+
+    popAudio.addEventListener('click', () => {
+      if (!currentAudioUrl) return;
+      try { new Audio(currentAudioUrl).play(); } catch(e){}
+    });
+
+    popSave.addEventListener('click', async () => {
+      if (!currentWord) return;
+      if (!tgId) { popSave.textContent = '⚠️ Открой из Telegram'; return; }
+      popSave.disabled = true;
+      popSave.innerHTML = '<span class="spinner"></span> Сохраняю...';
+      try {
+        const res = await fetch(API + '/api/vocab-add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tgId: tgId, word: currentWord, translation: currentTrans, phonetic: currentPhonetic })
+        });
+        const data = await res.json();
+        if (data.ok && data.added) {
+          popSave.classList.add('saved');
+          popSave.textContent = '✓ Добавлено в словарь';
+        } else if (data.ok && !data.added) {
+          popSave.classList.add('saved');
+          popSave.textContent = '✓ Уже в словаре';
+        } else {
+          popSave.textContent = '⚠️ Не получилось';
+          popSave.disabled = false;
+        }
+      } catch(e) {
+        popSave.textContent = '⚠️ Ошибка сети';
+        popSave.disabled = false;
+      }
+    });
+
+    document.querySelectorAll('.word').forEach(el => {
+      el.addEventListener('click', async () => {
+        const word = el.getAttribute('data-word');
+        if (activeWord) activeWord.classList.remove('active');
+        el.classList.add('active');
+        activeWord = el;
+
+        currentWord = word.toLowerCase();
+        currentTrans = '';
+        currentPhonetic = '';
+        popOrig.textContent = word;
+        popPhonetic.textContent = '';
+        popTrans.innerHTML = '<span class="spinner"></span>';
+        popDict.innerHTML = '<div class="pop-loading">Загружаю разбор...</div>';
+        currentAudioUrl = '';
+        popAudio.disabled = true;
+        popSave.disabled = false;
+        popSave.classList.remove('saved');
+        popSave.textContent = '⭐ Сохранить в словарь';
+        popup.classList.add('show');
+
+        translateFallback(word).then(tr => { popTrans.textContent = tr; currentTrans = tr; });
+
+        const dict = await lookupDict(word);
+        if (!dict) {
+          popDict.innerHTML = '<div class="pop-nodict">Подробный разбор недоступен для этого слова</div>';
+          return;
+        }
+        if (dict.phonetic) { popPhonetic.textContent = dict.phonetic; currentPhonetic = dict.phonetic; }
+        if (dict.audio) { currentAudioUrl = dict.audio; popAudio.disabled = false; }
+        else { popAudio.disabled = true; }
+
+        const defsToTranslate = [];
+        for (const m of dict.meanings) for (const d of m.defs) if (d.definition) defsToTranslate.push(d.definition);
+        const translatedDefs = {};
+        await Promise.all(defsToTranslate.map(async (def) => { translatedDefs[def] = await translateFallback(def); }));
+
+        let html = '';
+        for (const m of dict.meanings) {
+          if (!m.defs.length) continue;
+          const posLabel = posRu[m.pos] || m.pos;
+          html += '<div class="pos-group"><span class="pos-tag">' + escapeHtml(posLabel) + '</span>';
+          for (const d of m.defs) {
+            const defRu = translatedDefs[d.definition] || escapeHtml(d.definition);
+            html += '<div class="def-item"><div class="def-text">' + escapeHtml(defRu) + '</div>';
+            if (d.example) html += '<div class="def-example">' + highlightWord(d.example, word) + '</div>';
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+        popDict.innerHTML = html || '<div class="pop-nodict">Определения не найдены</div>';
+      });
+    });
+
+    document.getElementById('popClose').addEventListener('click', () => {
+      popup.classList.remove('show');
+      if (activeWord) { activeWord.classList.remove('active'); activeWord = null; }
+    });
+  }
+
+  if (!variantsRaw) {
+    app.innerHTML = '<div class="empty"><div class="big">💬</div><h2>Нет данных</h2><p>Открой из голосового сообщения</p></div>';
+  } else {
+    let variants = [];
+    try { variants = JSON.parse(variantsRaw); } catch(e) { variants = []; }
+
+    if (!Array.isArray(variants) || variants.length === 0) {
+      app.innerHTML = '<div class="empty"><div class="big">😕</div><h2>Не получилось подобрать варианты</h2><p>Попробуй ответить своими словами</p></div>';
+    } else {
+      const levels = [
+        { key: 'easy', label: 'Простой', cls: 'b-easy' },
+        { key: 'mid',  label: 'Средний', cls: 'b-mid' },
+        { key: 'hard', label: 'Развёрнутый', cls: 'b-hard' }
+      ];
+
+      const variantsHtml = variants.map((v, i) => {
+        const lvl = levels[i] || { label: 'Вариант ' + (i+1), cls: 'b-mid' };
+        const text = v.text || '';
+        const grammar = v.grammar || '';
+        const vocab = v.vocab || '';
+        const reason = v.reason || '';
+        const hasBreakdown = grammar || vocab || reason;
+
+        return '' +
+          '<div class="variant">' +
+            '<div class="variant-head"><span class="badge ' + lvl.cls + '">' + lvl.label + '</span></div>' +
+            '<div class="variant-text">' + clickableWords(text) + '</div>' +
+            '<div class="variant-translation" id="tr-' + i + '"></div>' +
+            '<div class="actions">' +
+              '<button class="translate-btn" data-i="' + i + '">🌐 Перевод</button>' +
+              (hasBreakdown ? '<button class="toggle-btn" data-i="' + i + '">Разобрать ✨</button>' : '') +
+              '<button class="send-btn" data-i="' + i + '">Скопировать →</button>' +
+            '</div>' +
+            (hasBreakdown ? (
+              '<div class="breakdown" id="bd-' + i + '">' +
+                (reason ? '<h4>💡 Почему так</h4><p>' + escapeHtml(reason) + '</p>' : '') +
+                (grammar ? '<h4>📐 Грамматика</h4><p>' + escapeHtml(grammar) + '</p>' : '') +
+                (vocab ? '<h4>📚 Полезные слова</h4><p>' + escapeHtml(vocab) + '</p>' : '') +
+              '</div>'
+            ) : '') +
+          '</div>';
+      }).join('');
+
+      app.innerHTML =
+        '<div class="header"><div class="dot">💬</div><div><h1>Варианты ответа</h1><p>Тапни на слово • выбери • отправь</p></div></div>' +
+        (botMessage ? (
+          '<div class="context-card"><div class="ctx-label">📨 Promptly спросил</div><div class="ctx-text">"' + escapeHtml(botMessage) + '"</div></div>'
+        ) : '') +
+        variantsHtml;
+
+      initWordPopup();
+
+      // Перевод варианта — сначала готовый от GPT, потом fallback Google
+      document.querySelectorAll('.translate-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const i = parseInt(btn.getAttribute('data-i'));
+          const trBox = document.getElementById('tr-' + i);
+          const isShown = trBox.classList.contains('show');
+          if (isShown) {
+            trBox.classList.remove('show');
+            btn.classList.remove('active');
+            btn.textContent = '🌐 Перевод';
+            return;
+          }
+
+          // 1. Сначала пробуем готовый перевод от GPT
+          const ready = variants[i]?.translation;
+          if (ready && ready.trim().length > 0) {
+            trBox.textContent = ready;
+            trBox.classList.add('show');
+            btn.classList.add('active');
+            btn.textContent = '🌐 Скрыть перевод';
+            return;
+          }
+
+          // 2. Если нет — fallback на Google
+          btn.innerHTML = '<span class="spinner-small"></span>Перевожу';
+          btn.disabled = true;
+          const tr = await translateFallback(variants[i]?.text || '');
+          trBox.textContent = tr;
+          trBox.classList.add('show');
+          btn.disabled = false;
+          btn.classList.add('active');
+          btn.textContent = '🌐 Скрыть перевод';
+        });
+      });
+
+      document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const i = btn.getAttribute('data-i');
+          const bd = document.getElementById('bd-' + i);
+          const open = bd.classList.contains('show');
+          if (open) { bd.classList.remove('show'); btn.classList.remove('open'); btn.textContent = 'Разобрать ✨'; }
+          else { bd.classList.add('show'); btn.classList.add('open'); btn.textContent = 'Свернуть ↑'; }
+        });
+      });
+
+      document.querySelectorAll('.send-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const i = parseInt(btn.getAttribute('data-i'));
+          const text = variants[i]?.text || '';
+          if (!text) return;
+          const ok = await copyToClipboard(text);
+          if (ok) {
+            btn.textContent = 'Скопировано ✓';
+            btn.classList.add('sent');
+            showToast('Текст скопирован — вставь в чат');
+            setTimeout(() => { if (tg && tg.close) tg.close(); }, 1200);
+          } else {
+            showToast('Не получилось скопировать');
+          }
+        });
+      });
+    }
+  }
 </script>
 </body>
 </html>
