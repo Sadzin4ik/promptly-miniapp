@@ -26,9 +26,11 @@ export default async function handler(req, res) {
       'Check ONLY real grammar/usage errors in their answer. RULES: ' +
       '1) Fix HOW it is said (grammar, tense, verb form, articles, prepositions, word order, spelling), NEVER change WHAT they mean. ' +
       '2) The -ing continuous form is CORRECT for actions happening now (I am sitting, I am talking). Only STATIVE verbs are wrong in -ing (taste, smell, see, hear, know, understand, want, need, like, love, prefer, own) - fix only those to the simple form. ' +
-      '3) If the English is already correct and natural, do NOT invent errors. ' +
-      '4) Do not flag punctuation or capitalization. ' +
-      'Return ONLY raw JSON, no markdown: {"has_errors": boolean, "corrected": "their answer with errors fixed, or unchanged if none", "better": "a more natural native-like version, or empty string if already natural", "feedback": "1-2 short sentences in RUSSIAN: praise what is good and explain the main fix simply"}';
+      '3) Present Perfect and perfect tenses (have/has/had + past participle: I have focused, I have not practiced) are CORRECT - do NOT change them to continuous or simple past. ' +
+      '4) DEFAULT IS NO ERRORS. If you are not 100 percent sure something is a real, clear mistake, treat it as correct: has_errors=false and corrected equals their exact text unchanged. NEVER invent a rule or an error. ' +
+      '5) Do not flag punctuation or capitalization. ' +
+      '6) The feedback MUST describe ONLY the changes you actually made. If has_errors is false, just praise the learner warmly and do NOT mention or invent any fix. ' +
+      'Return ONLY raw JSON, no markdown: {"has_errors": boolean, "corrected": "their answer with errors fixed, or their EXACT text unchanged if none", "better": "a more natural native-like version, or empty string if already natural", "feedback": "1-2 short sentences in RUSSIAN: if there were fixes explain the main one simply, if no fixes just praise"}';
 
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
