@@ -224,7 +224,7 @@
     });
   });
 
-  const levelRu = { beginner:'Начальный', intermediate:'Средний', advanced:'Продвинутый' };
+  const levelRu = { beginner:'Начальный', intermediate:'Средний', advanced:'Продвинутый', a1:'A1 · Начальный', a2:'A2 · Элементарный', b1:'B1 · Средний', b2:'B2 · Выше среднего', c1:'C1 · Продвинутый', c2:'C2 · Свободный' };
   function pluralDays(n){const a=Math.abs(n)%100;const b=a%10;if(a>10&&a<20)return'дней';if(b>1&&b<5)return'дня';if(b===1)return'день';return'дней';}
   function pluralWords(n){const a=Math.abs(n)%100;const b=a%10;if(a>10&&a<20)return'слов';if(b>1&&b<5)return'слова';if(b===1)return'слово';return'слов';}
 
@@ -242,7 +242,7 @@
           '<div class="hero-streak"><span class="fire">🔥</span>' + (data.streak||0) + '</div>' +
           '<div class="hero-days">' + (data.streak===1?'день подряд':'дней подряд') + '</div>' +
           '<div class="hero-name">' + (data.name||'Друг') + '</div>' +
-          '<div class="hero-level">' + (levelRu[data.level]||data.level||'Начальный') + '</div></div>' +
+          '<div class="hero-level">' + (levelRu[(data.level||'').toLowerCase()]||data.level||'Начальный') + '</div></div>' +
         '<div class="section-title">Общая активность</div>' +
         '<div class="stat-grid">' +
           '<div class="stat-card warm"><div class="stat-label">Рекорд серии</div><div class="stat-value">' + (data.maxStreak||0) + ' <span class="unit">' + pluralDays(data.maxStreak||0) + '</span></div></div>' +
