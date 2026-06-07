@@ -157,6 +157,23 @@
   .badge-progress-text { font-size:10px; color:var(--text-dim); margin:3px 0 2px; }
   .badge-mini-bar { height:3px; border-radius:2px; background:var(--border); overflow:hidden; margin-top:2px; }
   .badge-mini-fill { height:100%; border-radius:2px; transition:width 0.6s ease; }
+  .sub-status { border-radius:16px; padding:18px; margin-bottom:14px; text-align:center; }
+  .sub-status.active { background:linear-gradient(135deg,rgba(78,201,163,0.18),rgba(94,181,247,0.12)); border:1px solid rgba(78,201,163,0.35); }
+  .sub-status.free { background:var(--card-2); border:1px solid var(--border); }
+  .sub-status-ico { font-size:36px; margin-bottom:8px; }
+  .sub-status-title { font-size:16px; font-weight:700; color:var(--text); }
+  .sub-status-until { font-size:13px; color:var(--text-dim); margin-top:4px; }
+  .benefits-list { display:flex; flex-direction:column; gap:9px; }
+  .benefit-item { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text); }
+  .benefit-ico { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
+  .tariff-cards { display:flex; flex-direction:column; gap:10px; }
+  .tariff-card { background:var(--card-2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+  .tariff-card.featured { border-color:rgba(94,181,247,0.45); background:rgba(94,181,247,0.07); }
+  .tariff-price { font-size:20px; font-weight:800; color:var(--accent); }
+  .tariff-price .per { font-size:13px; font-weight:400; color:var(--text-dim); }
+  .tariff-period { font-size:12px; color:var(--text-dim); margin-top:2px; }
+  .tariff-badge { font-size:11px; font-weight:700; color:var(--accent); background:rgba(94,181,247,0.15); padding:3px 9px; border-radius:6px; flex-shrink:0; }
+  .sub-btn { display:block; width:100%; padding:16px; background:linear-gradient(135deg,var(--accent),var(--purple)); border:none; border-radius:14px; color:#fff; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -171,6 +188,10 @@
 
 <div class="screen" id="screen-progress">
   <div id="progressContent"><div class="loader"><div class="spin"></div><p>Загружаю прогресс...</p></div></div>
+</div>
+
+<div class="screen" id="screen-sub">
+  <div id="subContent"><div class="loader"><div class="spin"></div><p>Загружаю подписку...</p></div></div>
 </div>
 
 <!-- Режим карточек -->
@@ -208,6 +229,7 @@
 <div class="navbar">
   <button class="nav-item active" data-screen="profile"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></button>
   <button class="nav-item" data-screen="vocab"><span class="nav-icon">📚</span><span class="nav-label">Словарь</span></button>
+  <button class="nav-item" data-screen="sub"><span class="nav-icon">💳</span><span class="nav-label">Подписка</span></button>
 </div>
 
 <script>
@@ -226,6 +248,7 @@
       btn.classList.add('active');
       document.getElementById('screen-' + target).classList.add('active');
       if (target === 'vocab') loadVocab();
+      if (target === 'sub') loadSub();
     });
   });
 
@@ -552,6 +575,51 @@
     loadVocab(); // обновляем список
   }
   document.getElementById('fcClose').addEventListener('click', closeReview);
+
+  function subOrder() {
+    // TODO Stage 5: replace with real YooKassa payment link per tariff
+    if (tg && tg.showAlert) tg.showAlert('Оплата скоро станет доступна!');
+  }
+
+  // ====== ПОДПИСКА ======
+  async function loadSub() {
+    const content = document.getElementById('subContent');
+    if (!tgId) { content.innerHTML = '<div class="soon"><div class="big">🔒</div><h2>Открой из Telegram</h2><p>Доступно только внутри бота</p></div>'; return; }
+    content.innerHTML = '<div class="loader"><div class="spin"></div><p>Загружаю подписку...</p></div>';
+    try {
+      const res = await fetch(API + '/api/subscription?tgId=' + tgId);
+      const data = await res.json();
+      const active = data.ok && data.active;
+      let until = '';
+      if (data.until) {
+        const d = new Date(data.until);
+        const mo = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+        until = d.getDate() + ' ' + mo[d.getMonth()] + ' ' + d.getFullYear();
+      }
+      const statusHtml = active
+        ? '<div class="sub-status active"><div class="sub-status-ico">✅</div><div class="sub-status-title">Premium активна</div><div class="sub-status-until">до ' + until + '</div></div>'
+        : '<div class="sub-status free"><div class="sub-status-ico">🆓</div><div class="sub-status-title">Бесплатный доступ</div><div class="sub-status-until">7 сообщений в день</div></div>';
+      const benefitsHtml =
+        '<div class="benefit-item"><span class="benefit-ico">🎙</span>Безлимитное общение голосом и текстом</div>' +
+        '<div class="benefit-item"><span class="benefit-ico">✍️</span>Мягкие исправления ошибок с разбором</div>' +
+        '<div class="benefit-item"><span class="benefit-ico">💡</span>Подсказки, как ответить</div>' +
+        '<div class="benefit-item"><span class="benefit-ico">📚</span>Сохранение слов и тренировка словаря</div>' +
+        '<div class="benefit-item"><span class="benefit-ico">📊</span>Прогресс и уровень по шкале CEFR</div>';
+      const tarifsHtml =
+        '<div class="tariff-card"><div><div class="tariff-price">690 ₽<span class="per"> / мес</span></div><div class="tariff-period">1 месяц</div></div></div>' +
+        '<div class="tariff-card"><div><div class="tariff-price">589 ₽<span class="per"> / мес</span></div><div class="tariff-period">3 месяца · 1767 ₽</div></div><span class="tariff-badge">−15%</span></div>' +
+        '<div class="tariff-card featured"><div><div class="tariff-price">449 ₽<span class="per"> / мес</span></div><div class="tariff-period">12 месяцев · 5388 ₽</div></div><span class="tariff-badge">−35%</span></div>';
+      content.innerHTML =
+        statusHtml +
+        '<div class="section-title">Что даёт Premium</div>' +
+        '<div class="stat-card" style="animation-delay:0.05s"><div class="benefits-list">' + benefitsHtml + '</div></div>' +
+        '<div class="section-title">Тарифы</div>' +
+        '<div class="tariff-cards">' + tarifsHtml + '</div>' +
+        (active ? '' : '<div style="margin-top:14px;"><button class="sub-btn" onclick="subOrder()">💳 Оформить подписку</button></div>');
+    } catch(e) {
+      content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
+    }
+  }
 
   loadProfile();
 </script>
