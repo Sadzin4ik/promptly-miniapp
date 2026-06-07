@@ -150,6 +150,13 @@
 
   @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
   @keyframes spin { to{transform:rotate(360deg)} }
+  .level-steps { display:flex; gap:5px; margin-top:10px; }
+  .step-item { flex:1; padding:5px 0; text-align:center; font-size:11px; font-weight:700; border-radius:7px; background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.45); }
+  .step-item.done { background:rgba(255,255,255,0.2); color:rgba(255,255,255,0.8); }
+  .step-item.current { background:#fff; color:#3a3f8a; }
+  .badge-progress-text { font-size:10px; color:var(--text-dim); margin:3px 0 2px; }
+  .badge-mini-bar { height:3px; border-radius:2px; background:var(--border); overflow:hidden; margin-top:2px; }
+  .badge-mini-fill { height:100%; border-radius:2px; transition:width 0.6s ease; }
 </style>
 </head>
 <body>
@@ -201,7 +208,6 @@
 <div class="navbar">
   <button class="nav-item active" data-screen="profile"><span class="nav-icon">👤</span><span class="nav-label">Профиль</span></button>
   <button class="nav-item" data-screen="vocab"><span class="nav-icon">📚</span><span class="nav-label">Словарь</span></button>
-  <button class="nav-item" data-screen="progress"><span class="nav-icon">📈</span><span class="nav-label">Прогресс</span></button>
 </div>
 
 <script>
@@ -220,7 +226,6 @@
       btn.classList.add('active');
       document.getElementById('screen-' + target).classList.add('active');
       if (target === 'vocab') loadVocab();
-      if (target === 'progress') loadProgress();
     });
   });
 
@@ -229,32 +234,105 @@
   function pluralWords(n){const a=Math.abs(n)%100;const b=a%10;if(a>10&&a<20)return'слов';if(b>1&&b<5)return'слова';if(b===1)return'слово';return'слов';}
 
   // ====== ПРОФИЛЬ ======
+  function tierBadge(name, value, tiers, unit) {
+    let earned = null, next = tiers[0];
+    for (let i = 0; i < tiers.length; i++) {
+      if (value >= tiers[i].min) { earned = tiers[i]; next = tiers[i+1] || null; }
+    }
+    const ico = earned ? earned.ico : '🔒';
+    const progress = next ? Math.min(Math.round(value / next.min * 100), 100) : 100;
+    const label = next ? (value + ' / ' + next.min + ' ' + unit) : 'Максимум!';
+    const barColor = !earned ? '#3a3f4b' : (next ? '#7b6ef6' : '#f0b429');
+    return '<div class="badge-card ' + (earned ? 'on' : 'off') + '">' +
+      '<div class="badge-ico">' + ico + '</div>' +
+      '<div class="badge-name">' + name + '</div>' +
+      '<div class="badge-progress-text">' + label + '</div>' +
+      '<div class="badge-mini-bar"><div class="badge-mini-fill" style="width:' + progress + '%;background:' + barColor + '"></div></div>' +
+    '</div>';
+  }
+
+  function weeklyBars(words) {
+    const weeks = 6; const now = Date.now(); const WEEK = 604800000;
+    const buckets = new Array(weeks).fill(0);
+    words.forEach(w => { const t = w.added||0; if(!t)return; const idx = weeks-1-Math.floor((now-t)/WEEK); if(idx>=0&&idx<weeks)buckets[idx]++; });
+    let maxBucket = 1; buckets.forEach(c => { if(c>maxBucket)maxBucket=c; });
+    return buckets.map((c,i) => {
+      const h = c>0 ? Math.max(Math.round(c/maxBucket*100),8) : 2;
+      const label = i===weeks-1 ? 'сейчас' : (weeks-1-i)+'н';
+      return '<div class="bar-col"><div class="bar-wrap"><div class="bar-fill" style="height:'+h+'px"></div></div><div class="bar-num">'+(c||'')+'</div><div class="bar-lbl">'+label+'</div></div>';
+    }).join('');
+  }
+
   async function loadProfile() {
     const content = document.getElementById('profileContent');
     if (!tgId) { content.innerHTML = '<div class="soon"><div class="big">🔒</div><h2>Открой из Telegram</h2><p>Профиль доступен только внутри бота</p></div>'; return; }
+    content.innerHTML = '<div class="loader"><div class="spin"></div><p>Загружаю профиль...</p></div>';
     try {
-      const res = await fetch(API + '/api/profile?tgId=' + tgId);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'fail');
+      const [pRes, vRes] = await Promise.all([
+        fetch(API + '/api/profile?tgId=' + tgId).then(r => r.json()),
+        fetch(API + '/api/vocab?tgId=' + tgId).then(r => r.json())
+      ]);
+      if (!pRes || !pRes.ok) throw new Error('fail');
+      const data = pRes;
+      const words = (vRes && vRes.ok && Array.isArray(vRes.words)) ? vRes.words : [];
       const corr = data.correctness || 0;
+      const messages = data.messages || 0;
+      const maxStreak = data.maxStreak || 0;
+      const totalWords = words.length;
+      const learned = words.filter(w => w.status === 'learned').length;
+      const learning = words.filter(w => w.status === 'learning').length;
+      const fresh = Math.max(0, totalWords - learned - learning);
+      const levelOrder = ['a1','a2','b1','b2','c1'];
+      const levelLabels = {a1:'A1',a2:'A2',b1:'B1',b2:'B2',c1:'C1'};
+      const lk = (data.level||'beginner').toLowerCase();
+      const curIdx = levelOrder.indexOf(lk);
+      const stepsHtml = levelOrder.map((l,i) => {
+        const cls = i < curIdx ? 'done' : i === curIdx ? 'current' : '';
+        return '<div class="step-item ' + cls + '">' + levelLabels[l] + '</div>';
+      }).join('');
+      const masteryHtml = totalWords > 0 ?
+        '<div class="mastery-bar">' +
+          '<div class="seg new" style="width:' + (fresh/totalWords*100) + '%"></div>' +
+          '<div class="seg learning" style="width:' + (learning/totalWords*100) + '%"></div>' +
+          '<div class="seg learned" style="width:' + (learned/totalWords*100) + '%"></div>' +
+        '</div>' +
+        '<div class="legend">' +
+          '<span><i class="dot new"></i>Новые: ' + fresh + '</span>' +
+          '<span><i class="dot learning"></i>Учу: ' + learning + '</span>' +
+          '<span><i class="dot learned"></i>Выучено: ' + learned + '</span>' +
+        '</div>' :
+        '<div class="empty-hint">Пока нет сохранённых слов. Сохраняй слова из разбора и подсказок — и здесь появится прогресс.</div>';
       content.innerHTML =
         '<div class="hero"><div class="hero-label">ГОВОРЮ НА ENGLISH</div>' +
           '<div class="hero-streak"><span class="fire">🔥</span>' + (data.streak||0) + '</div>' +
           '<div class="hero-days">' + (data.streak===1?'день подряд':'дней подряд') + '</div>' +
           '<div class="hero-name">' + (data.name||'Друг') + '</div>' +
-          '<div class="hero-level">' + (levelRu[(data.level||'').toLowerCase()]||data.level||'Начальный') + '</div></div>' +
+          '<div class="hero-level">' + (levelRu[lk]||data.level||'Начальный') + '</div>' +
+          '<div class="level-steps">' + stepsHtml + '</div></div>' +
         '<div class="section-title">Общая активность</div>' +
         '<div class="stat-grid">' +
-          '<div class="stat-card warm"><div class="stat-label">Рекорд серии</div><div class="stat-value">' + (data.maxStreak||0) + ' <span class="unit">' + pluralDays(data.maxStreak||0) + '</span></div></div>' +
+          '<div class="stat-card warm"><div class="stat-label">Рекорд серии</div><div class="stat-value">' + maxStreak + ' <span class="unit">' + pluralDays(maxStreak) + '</span></div></div>' +
           '<div class="stat-card accent"><div class="stat-label">Дней с Promptly</div><div class="stat-value">' + (data.daysSinceStart||0) + ' <span class="unit">' + pluralDays(data.daysSinceStart||0) + '</span></div></div>' +
-          '<div class="stat-card"><div class="stat-label">Сообщений</div><div class="stat-value">' + (data.messages||0) + '</div></div>' +
+          '<div class="stat-card"><div class="stat-label">Сообщений</div><div class="stat-value">' + messages + '</div></div>' +
           '<div class="stat-card"><div class="stat-label">Слов написано</div><div class="stat-value">' + (data.words||0) + '</div></div>' +
         '</div>' +
         '<div class="section-title">Точность речи</div>' +
         '<div class="stat-card success" style="animation-delay:0.3s"><div class="stat-label">Сообщений без ошибок</div>' +
           '<div class="stat-value">' + corr + '<span class="unit">%</span></div>' +
-          '<div class="correctness-bar"><div class="correctness-fill" id="corrFill" style="width:0%"></div></div></div>';
-      setTimeout(() => { const f = document.getElementById('corrFill'); if (f) f.style.width = corr + '%'; }, 200);
+          '<div class="correctness-bar"><div class="correctness-fill" id="corrFill" style="width:0%"></div></div></div>' +
+        '<div class="section-title">Достижения</div>' +
+        '<div class="badge-grid">' +
+          tierBadge('Серия дней', maxStreak, [{min:3,ico:'🥉'},{min:7,ico:'🥈'},{min:30,ico:'🥇'}], 'дн') +
+          tierBadge('Сообщений', messages, [{min:50,ico:'🥉'},{min:200,ico:'🥈'},{min:1000,ico:'🥇'}], 'сообщ') +
+          tierBadge('Слов сохранено', totalWords, [{min:10,ico:'🥉'},{min:50,ico:'🥈'},{min:200,ico:'🥇'}], 'слов') +
+          tierBadge('Слов выучено', learned, [{min:5,ico:'🥉'},{min:25,ico:'🥈'},{min:100,ico:'🥇'}], 'слов') +
+          tierBadge('Точность речи', corr, [{min:50,ico:'🥉'},{min:75,ico:'🥈'},{min:90,ico:'🥇'}], '%') +
+        '</div>' +
+        '<div class="section-title">Освоение словаря</div>' +
+        '<div class="stat-card" style="animation-delay:0.05s">' + masteryHtml + '</div>' +
+        '<div class="section-title">Рост словаря по неделям</div>' +
+        '<div class="stat-card" style="animation-delay:0.1s"><div class="bars">' + weeklyBars(words) + '</div></div>';
+      setTimeout(() => { const f = document.getElementById('corrFill'); if(f) f.style.width = corr+'%'; }, 200);
     } catch(e) {
       content.innerHTML = '<div class="soon"><div class="big">😕</div><h2>Не удалось загрузить</h2><p>Попробуй позже</p></div>';
     }
