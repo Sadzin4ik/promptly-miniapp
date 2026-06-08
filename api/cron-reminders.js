@@ -5,7 +5,7 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 // Light, varied English prompts — feel like a friend nudging, not a system
 const MESSAGES = [
@@ -24,7 +24,7 @@ async function notifyUser(tgId, token, text) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: String(tgId),
-        text: text + '\n\n💤 Не хочешь напоминаний — отправь /stop',
+        text: text,
       }),
     });
     return r.ok;
@@ -75,10 +75,10 @@ export default async function handler(req, res) {
           if (!lastActive) { summary.skipped++; continue; }
 
           const inactiveMs = now - parseInt(lastActive, 10);
-          if (inactiveMs < TWO_DAYS_MS) { summary.skipped++; continue; }
+          if (inactiveMs < ONE_DAY_MS) { summary.skipped++; continue; }
 
-          // Don't re-remind within 2 days of last reminder
-          if (lastReminder && (now - parseInt(lastReminder, 10)) < TWO_DAYS_MS) {
+          // Don't re-remind within 1 day of last reminder
+          if (lastReminder && (now - parseInt(lastReminder, 10)) < ONE_DAY_MS) {
             summary.skipped++; continue;
           }
 
