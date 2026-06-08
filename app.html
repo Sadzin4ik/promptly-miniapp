@@ -593,17 +593,29 @@
       });
       const data = await res.json();
       if (!data.ok || !data.confirmationUrl) {
-        if (tg && tg.showAlert) tg.showAlert('Не удалось создать платёж. Попробуй позже.');
+        document.body.innerHTML = '<div style="padding:80px 20px;text-align:center;color:#fff;font-family:inherit;"><div style="font-size:48px;margin-bottom:16px;">😕</div><p>Не удалось создать платёж.<br>Попробуй ещё раз позже.</p></div>';
         return;
       }
-      if (tg && tg.openLink) {
-        tg.openLink(data.confirmationUrl);
-        setTimeout(() => { if (tg && tg.close) tg.close(); }, 300);
-      } else {
-        window.location.href = data.confirmationUrl;
+      const planNames = { month: '1 месяц — 690 ₽', quarter: '3 месяца — 1767 ₽', year: '1 год — 5388 ₽' };
+      const planLabel = planNames[plan] || plan;
+      document.body.innerHTML =
+        '<div style="padding:60px 20px;text-align:center;color:#fff;font-family:inherit;">' +
+          '<div style="font-size:56px;margin-bottom:18px;">💳</div>' +
+          '<h2 style="margin:0 0 8px;font-size:22px;">Платёж готов</h2>' +
+          '<p style="color:rgba(255,255,255,0.6);margin:0 0 28px;font-size:14px;">' + planLabel + '</p>' +
+          '<a href="' + data.confirmationUrl + '" id="payLink" target="_blank" rel="noopener" style="display:inline-block;padding:16px 36px;background:linear-gradient(135deg,#7b6ef6,#5642d4);color:#fff;text-decoration:none;border-radius:14px;font-weight:700;font-size:16px;box-shadow:0 8px 20px rgba(123,110,246,0.35);">Перейти к оплате →</a>' +
+          '<p style="color:rgba(255,255,255,0.4);margin-top:24px;font-size:12px;line-height:1.5;">Откроется страница ЮКассы.<br>После оплаты вернёшься в бот.</p>' +
+        '</div>';
+      const link = document.getElementById('payLink');
+      if (link && tg && tg.openLink) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          tg.openLink(data.confirmationUrl);
+          setTimeout(() => { if (tg && tg.close) tg.close(); }, 200);
+        });
       }
     } catch (e) {
-      if (tg && tg.showAlert) tg.showAlert('Ошибка: ' + (e.message || 'неизвестная'));
+      document.body.innerHTML = '<div style="padding:80px 20px;text-align:center;color:#fff;font-family:inherit;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><p>Ошибка: ' + (e.message || 'неизвестная') + '</p></div>';
     }
   }
 
