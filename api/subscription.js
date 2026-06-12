@@ -15,10 +15,14 @@ export default async function handler(req, res) {
     const tgId = req.query.tgId || (req.body && req.body.tgId);
     if (!tgId) return res.status(400).json({ ok: false, error: 'tgId required' });
 
-    const sub = await redis.get('tg:' + tgId + ':sub');
+    const [sub, refCountRaw] = await Promise.all([
+      redis.get('tg:' + tgId + ':sub'),
+      redis.get('tg:' + tgId + ':refCount'),
+    ]);
+    const refCount = refCountRaw ? parseInt(refCountRaw, 10) : 0;
 
     if (!sub || !sub.active || !sub.until) {
-      return res.status(200).json({ ok: true, active: false });
+      return res.status(200).json({ ok: true, active: false, refCount: refCount });
     }
 
     const now = new Date();
@@ -31,7 +35,8 @@ export default async function handler(req, res) {
       active: isActive,
       plan: sub.plan || null,
       until: isActive ? sub.until : null,
-      daysLeft: daysLeft
+      daysLeft: daysLeft,
+      refCount: refCount
     });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message });
