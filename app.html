@@ -177,6 +177,16 @@
   .tariff-popular { font-size:10px; font-weight:700; color:var(--accent); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px; }
   .tariff-card { cursor:pointer; transition:transform 0.1s ease; }
   .tariff-card:active { transform:scale(0.98); }
+  .ref-card { margin-top:16px; border-radius:18px; padding:20px; background:linear-gradient(135deg, rgba(139,124,255,0.18), rgba(94,181,247,0.12)); border:1px solid rgba(139,124,255,0.35); text-align:center; }
+  .ref-card-ico { font-size:34px; margin-bottom:6px; line-height:1; }
+  .ref-card-title { font-size:16px; font-weight:700; color:var(--text); }
+  .ref-card-desc { font-size:13px; color:var(--text-dim); margin:8px 0 12px; line-height:1.5; }
+  .ref-card-stat { font-size:12px; color:var(--text-dim); margin-bottom:14px; padding:6px 12px; background:rgba(255,255,255,0.05); border-radius:8px; display:inline-block; }
+  .ref-btn { display:inline-block; padding:13px 28px; background:linear-gradient(135deg,#8b7cff,#6a5af0); color:#fff; border:none; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer; box-shadow:0 6px 16px rgba(139,124,255,0.3); transition:transform .12s; font-family:inherit; }
+  .ref-btn:active { transform:scale(0.97); }
+  .ref-card.locked { background:linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.08); }
+  .ref-card.locked .ref-card-ico { filter:grayscale(0.4); opacity:0.85; }
+  .ref-card.locked .ref-card-title { color:var(--text-dim); }
 </style>
 </head>
 <body>
@@ -579,6 +589,19 @@
   }
   document.getElementById('fcClose').addEventListener('click', closeReview);
 
+  function shareReferral() {
+    if (!tgId) {
+      if (tg && tg.showAlert) tg.showAlert('Открой меня из бота, чтобы пригласить друзей');
+      return;
+    }
+    const link = 'https://t.me/PromptlyEnglishbot?start=ref_' + tgId;
+    const text = 'Учу английский с Promptly — ИИ-тренер прямо в Telegram. Голосом и текстом, с мягкими исправлениями. Попробуй:';
+    const shareUrl = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text);
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(shareUrl);
+    else if (tg && tg.openLink) tg.openLink(shareUrl);
+    else window.open(shareUrl, '_blank');
+  }
+
   async function startPayment(plan) {
     if (!tgId) {
       if (tg && tg.showAlert) tg.showAlert('Открой меня из бота, чтобы оплатить');
@@ -657,12 +680,32 @@
         '<div class="tariff-card" onclick="startPayment(\'month\')"><div><div class="tariff-price">690 ₽<span class="per"> / мес</span></div><div class="tariff-period">1 месяц</div></div></div>' +
         '<div class="tariff-card featured" onclick="startPayment(\'quarter\')"><div><div class="tariff-popular">👥 Выбирают чаще</div><div class="tariff-price">589 ₽<span class="per"> / мес</span></div><div class="tariff-period">3 месяца · 1767 ₽</div></div><span class="tariff-badge">−15%</span></div>' +
         '<div class="tariff-card" onclick="startPayment(\'year\')"><div><div class="tariff-price">449 ₽<span class="per"> / мес</span></div><div class="tariff-period">12 месяцев · 5388 ₽</div></div><span class="tariff-badge">−35%</span></div>';
+      const refCount = data.refCount || 0;
+      const refRemaining = Math.max(0, 3 - refCount);
+      const refStatus = refCount >= 3
+        ? '✓ Все 3 бонуса получены — спасибо!'
+        : refCount + ' из 3 друзей · доступно ещё ' + refRemaining;
+      const refHtml = active
+        ? '<div class="ref-card">' +
+            '<div class="ref-card-ico">🎁</div>' +
+            '<div class="ref-card-title">Продли Premium бесплатно</div>' +
+            '<div class="ref-card-desc">Пригласи друга — он получит <b>2 недели Premium</b>, ты получишь <b>+1 неделю</b>. До 3 друзей.</div>' +
+            '<div class="ref-card-stat">' + refStatus + '</div><br>' +
+            '<button class="ref-btn" onclick="shareReferral()">📤 Поделиться ссылкой</button>' +
+          '</div>'
+        : '<div class="ref-card locked">' +
+            '<div class="ref-card-ico">🔒</div>' +
+            '<div class="ref-card-title">Приглашай друзей и получай бонусы</div>' +
+            '<div class="ref-card-desc">С Premium ты сможешь приглашать друзей: каждому — <b>2 недели Premium</b>, тебе — <b>+1 неделя</b> за каждого (до 3 друзей).</div>' +
+            '<div class="ref-card-stat" style="opacity:0.6;">Доступно с активной Premium-подпиской</div>' +
+          '</div>';
       content.innerHTML =
         statusHtml +
         '<div class="section-title">Что даёт Premium</div>' +
         '<div class="stat-card" style="animation-delay:0.05s"><div class="benefits-list">' + benefitsHtml + '</div></div>' +
         '<div class="section-title">Тарифы</div>' +
         '<div class="tariff-cards">' + tarifsHtml + '</div>' +
+        refHtml +
         (active
           ? '<div style="margin-top:14px;text-align:center;font-size:13px;color:var(--text-dim);">Хочешь продлить? Нажми на тариф 👆</div>'
           : '<div style="margin-top:14px;text-align:center;font-size:13px;color:var(--text-dim);">Нажми на нужный тариф для оплаты 👆</div>');
