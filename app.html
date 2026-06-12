@@ -669,7 +669,7 @@
       }
       const statusHtml = active
         ? '<div class="sub-status active"><div class="sub-status-ico">✅</div><div class="sub-status-title">Premium активна</div><div class="sub-status-until">до ' + until + '</div></div>'
-        : '<div class="sub-status free"><div class="sub-status-ico">🆓</div><div class="sub-status-title">Бесплатный доступ</div><div class="sub-status-until">7 сообщений в день</div></div>';
+        : '<div class="sub-status free"><div class="sub-status-ico">🆓</div><div class="sub-status-title">Бесплатный доступ</div><div class="sub-status-until">Первые 3 дня без ограничений, далее 7 сообщений в день</div></div>';
       const benefitsHtml =
         '<div class="benefit-item"><span class="benefit-ico">🎙</span>Безлимитное общение голосом и текстом</div>' +
         '<div class="benefit-item"><span class="benefit-ico">✍️</span>Мягкие исправления ошибок с разбором</div>' +
@@ -685,7 +685,9 @@
       const refStatus = refCount >= 3
         ? '✓ Все 3 бонуса получены — спасибо!'
         : refCount + ' из 3 друзей · доступно ещё ' + refRemaining;
-      const refHtml = active
+      const paidPlans = ['month', 'quarter', 'year'];
+      const isPaid = active && paidPlans.indexOf(data.plan) >= 0;
+      const refHtml = isPaid
         ? '<div class="ref-card">' +
             '<div class="ref-card-ico">🎁</div>' +
             '<div class="ref-card-title">Продли Premium бесплатно</div>' +
@@ -696,8 +698,8 @@
         : '<div class="ref-card locked">' +
             '<div class="ref-card-ico">🔒</div>' +
             '<div class="ref-card-title">Приглашай друзей и получай бонусы</div>' +
-            '<div class="ref-card-desc">С Premium ты сможешь приглашать друзей: каждому — <b>2 недели Premium</b>, тебе — <b>+1 неделя</b> за каждого (до 3 друзей).</div>' +
-            '<div class="ref-card-stat" style="opacity:0.6;">Доступно с активной Premium-подпиской</div>' +
+            '<div class="ref-card-desc">С <b>купленной</b> Premium-подпиской ты сможешь приглашать друзей: каждому — <b>2 недели Premium</b>, тебе — <b>+1 неделя</b> за каждого (до 3 друзей).</div>' +
+            '<div class="ref-card-stat" style="opacity:0.6;">Доступно с купленной Premium-подпиской</div>' +
           '</div>';
       content.innerHTML =
         statusHtml +
