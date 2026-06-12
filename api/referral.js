@@ -73,20 +73,22 @@ export default async function handler(req, res) {
     // Lock invitee so this can't be repeated
     await redis.set('tg:' + inviteeId + ':referredBy', inviterId);
 
-    // Inviter must have active Premium subscription to use referrals
+    // Inviter must have an active PAID subscription to use referrals (closes the chain loophole:
+    // premium received via referral or grant does NOT grant the right to invite further)
+    const PAID_PLANS = ['month', 'quarter', 'year'];
     const inviterSub = await redis.get('tg:' + inviterId + ':sub');
-    const inviterHasPremium = inviterSub && inviterSub.active && inviterSub.until && new Date(inviterSub.until) > new Date();
+    const inviterHasPaid = inviterSub && inviterSub.active && inviterSub.until &&
+      new Date(inviterSub.until) > new Date() && PAID_PLANS.includes(inviterSub.plan);
 
-    if (!inviterHasPremium) {
-      // Inviter doesn't have Premium — no rewards given, no bonus to invitee either.
-      // Tell the invitee politely, and nudge the inviter to upgrade.
+    if (!inviterHasPaid) {
+      // No rewards. Tell the invitee politely, nudge the inviter to buy.
       await notify(inviteeId, token,
         '👋 Привет! Тебя пригласили в Promptly.\n\nК сожалению, бонус по приглашению сейчас не активен. Но ты всё равно можешь попробовать бота бесплатно — 3 дня без ограничений, потом 7 сообщений в день. А если захочешь больше — оформи Premium через /premium 🚀'
       );
       await notify(inviterId, token,
-        '👋 По твоей ссылке пришёл друг — здорово!\n\nНо чтобы получать бонус (+1 неделя Premium за каждого друга), у тебя должна быть активная Premium-подписка. Оформить можно через /premium 💎'
+        '👋 По твоей ссылке пришёл друг — здорово!\n\nНо бонусы за приглашения доступны только при <b>купленной</b> Premium-подписке (бонусная или подарочная не считается). Оформить можно через /premium 💎'
       );
-      return res.status(200).json({ ok: false, reason: 'inviter_no_premium' });
+      return res.status(200).json({ ok: false, reason: 'inviter_not_paid' });
     }
 
     // Invitee gets the welcome bonus
