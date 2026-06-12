@@ -118,6 +118,14 @@ export default async function handler(req, res) {
       'Спасибо! Теперь можно общаться без ограничений. 🎉'
     );
 
+    // Referral teaser — warm moment, user just paid
+    setTimeout(async () => {
+      await notifyUser(
+        tgId,
+        '🎁 Кстати — приглашай друзей в Promptly! За каждого друга получишь <b>+1 неделю Premium</b> (до 3 друзей), а другу подарим <b>2 недели</b>.\n\nКоманда: /invite'
+      );
+    }, 2000);
+
     return res.status(200).json({ ok: true });
 
   } catch (e) {
