@@ -35,6 +35,69 @@ async function notifyUser(tgId, token, text) {
 }
 
 export default async function handler(req, res) {
+  // ============================================================
+  // ВЕТКА 1: Keep-warm mode (вызывается внешним cron'ом каждые 5 мин)
+  // ============================================================
+  // Botpress подтвердил (тикет 19.06.2026), что Always Alive не покрывает
+  // Telegram-коннектор — после простоя он "остывает", первое сообщение
+  // теряется. Воркэраунд от их саппорта: периодически слать боту служебный
+  // пинг, чтобы коннектор оставался прогретым.
+  //
+  // Эндпоинт: GET /api/cron-reminders?action=warm
+  //          Header: x-keepwarm-secret: <KEEPWARM_SECRET>
+  //
+  // Этот режим вообще не трогает Redis и не перебирает юзеров — мгновенный
+  // выход после отправки пинга.
+  if (req.query && req.query.action === 'warm') {
+    const expected = process.env.KEEPWARM_SECRET;
+    if (!expected) {
+      return res.status(500).json({ ok: false, error: 'KEEPWARM_SECRET not configured' });
+    }
+    const provided = req.headers['x-keepwarm-secret'] || (req.query && req.query.secret);
+    if (provided !== expected) {
+      return res.status(401).json({ ok: false, error: 'unauthorized' });
+    }
+
+    const tokenKW = process.env.TELEGRAM_BOT_TOKEN;
+    const adminId = process.env.ADMIN_ID || '8977716346';
+    if (!tokenKW) {
+      return res.status(500).json({ ok: false, error: 'TELEGRAM_BOT_TOKEN missing' });
+    }
+
+    try {
+      const tgRes = await fetch('https://api.telegram.org/bot' + tokenKW + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: String(adminId),
+          text: '__ping__',
+          disable_notification: true,
+        }),
+      });
+      const data = await tgRes.json();
+      if (!data.ok) {
+        return res.status(502).json({ ok: false, telegram: data });
+      }
+      // Сразу удаляем пинг, чтобы не засорять чат админа
+      try {
+        await fetch('https://api.telegram.org/bot' + tokenKW + '/deleteMessage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: String(adminId),
+            message_id: data.result.message_id,
+          }),
+        });
+      } catch (_) { /* не критично */ }
+      return res.status(200).json({ ok: true, mode: 'warm', pingedAt: new Date().toISOString() });
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: String(e && e.message || e) });
+    }
+  }
+
+  // ============================================================
+  // ВЕТКА 2: обычные напоминания (Vercel Cron, раз в день)
+  // ============================================================
   // Authenticate: Vercel cron sends Authorization: Bearer CRON_SECRET
   if (!process.env.CRON_SECRET) {
     return res.status(500).json({ ok: false, error: 'CRON_SECRET not configured' });
