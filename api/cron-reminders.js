@@ -1,4 +1,6 @@
 import { Redis } from '@upstash/redis';
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions/index.js';
 
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -38,16 +40,17 @@ export default async function handler(req, res) {
   // ============================================================
   // ВЕТКА 1: Keep-warm mode (вызывается внешним cron'ом каждые 5 мин)
   // ============================================================
-  // Botpress подтвердил (тикет 19.06.2026), что Always Alive не покрывает
-  // Telegram-коннектор — после простоя он "остывает", первое сообщение
-  // теряется. Воркэраунд от их саппорта: периодически слать боту служебный
-  // пинг, чтобы коннектор оставался прогретым.
+  // Botpress отбрасывает сообщения, которые бот шлёт сам себе (is_bot:true),
+  // поэтому раньше __ping__ не доходил до Standard3 и коннектор не прогревался.
+  //
+  // Новая схема: используем второй личный Telegram-аккаунт через GramJS
+  // (User API). Он шлёт боту обычное сообщение "__ping__" — для Botpress это
+  // выглядит как сообщение от настоящего юзера, оно проходит через Standard3,
+  // ловится guard'ом (if userMessage === '__ping__') и тихо возвращается.
+  // Этого хватает, чтобы коннектор и backend Botpress оставались тёплыми.
   //
   // Эндпоинт: GET /api/cron-reminders?action=warm
   //          Header: x-keepwarm-secret: <KEEPWARM_SECRET>
-  //
-  // Этот режим вообще не трогает Redis и не перебирает юзеров — мгновенный
-  // выход после отправки пинга.
   if (req.query && req.query.action === 'warm') {
     const expected = process.env.KEEPWARM_SECRET;
     if (!expected) {
@@ -58,39 +61,43 @@ export default async function handler(req, res) {
       return res.status(401).json({ ok: false, error: 'unauthorized' });
     }
 
-    const tokenKW = process.env.TELEGRAM_BOT_TOKEN;
-    const adminId = process.env.ADMIN_ID || '8977716346';
-    if (!tokenKW) {
-      return res.status(500).json({ ok: false, error: 'TELEGRAM_BOT_TOKEN missing' });
+    const apiIdRaw = process.env.TG_USER_API_ID;
+    const apiHash = process.env.TG_USER_API_HASH;
+    const sessionString = process.env.TG_USER_SESSION;
+    const botUsername = process.env.BOT_USERNAME || 'PromptlyEnglishbot';
+
+    if (!apiIdRaw || !apiHash || !sessionString) {
+      return res.status(500).json({
+        ok: false,
+        error: 'TG_USER_API_ID / TG_USER_API_HASH / TG_USER_SESSION not configured',
+      });
     }
 
+    const apiId = parseInt(apiIdRaw, 10);
+    if (!apiId) {
+      return res.status(500).json({ ok: false, error: 'TG_USER_API_ID is not a number' });
+    }
+
+    let client = null;
     try {
-      const tgRes = await fetch('https://api.telegram.org/bot' + tokenKW + '/sendMessage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: String(adminId),
-          text: '__ping__',
-          disable_notification: true,
-        }),
+      client = new TelegramClient(
+        new StringSession(sessionString),
+        apiId,
+        apiHash,
+        { connectionRetries: 2 }
+      );
+      await client.connect();
+      await client.sendMessage(botUsername, { message: '__ping__' });
+      await client.disconnect();
+      return res.status(200).json({
+        ok: true,
+        mode: 'warm',
+        via: 'user-api',
+        pingedAt: new Date().toISOString(),
       });
-      const data = await tgRes.json();
-      if (!data.ok) {
-        return res.status(502).json({ ok: false, telegram: data });
-      }
-      // Сразу удаляем пинг, чтобы не засорять чат админа
-      try {
-        await fetch('https://api.telegram.org/bot' + tokenKW + '/deleteMessage', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: String(adminId),
-            message_id: data.result.message_id,
-          }),
-        });
-      } catch (_) { /* не критично */ }
-      return res.status(200).json({ ok: true, mode: 'warm', pingedAt: new Date().toISOString() });
     } catch (e) {
+      try { if (client) await client.disconnect(); } catch (_) {}
+      console.error('Keep-warm via user API failed:', e && e.message);
       return res.status(500).json({ ok: false, error: String(e && e.message || e) });
     }
   }
