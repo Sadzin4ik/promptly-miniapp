@@ -36,180 +36,118 @@
   .container { max-width: 1400px; margin: 0 auto; }
 
   /* Header */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-  }
-  .header h1 {
-    font-size: 22px;
-    font-weight: 700;
-  }
-  .header h1 .badge {
-    font-size: 11px;
-    background: var(--accent);
-    color: #000;
-    padding: 3px 8px;
-    border-radius: 6px;
-    margin-left: 8px;
-    vertical-align: middle;
-  }
-  .header .refresh-btn {
-    background: var(--card);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-  }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .header h1 .badge { font-size: 11px; background: var(--accent); color: #000; padding: 3px 8px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
+  .header .refresh-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; }
   .header .refresh-btn:hover { background: var(--card-2); }
 
   /* Tabs */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--card);
-    padding: 4px;
-    border-radius: 12px;
-    margin-bottom: 24px;
-    overflow-x: auto;
-  }
-  .tab {
-    padding: 10px 18px;
-    background: transparent;
-    color: var(--text-dim);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    white-space: nowrap;
-    transition: all 0.15s;
-  }
-  .tab.active {
-    background: var(--accent);
-    color: #000;
-  }
+  .tabs { display: flex; gap: 4px; background: var(--card); padding: 4px; border-radius: 12px; margin-bottom: 24px; overflow-x: auto; }
+  .tab { padding: 10px 18px; background: transparent; color: var(--text-dim); border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; white-space: nowrap; transition: all 0.15s; }
+  .tab.active { background: var(--accent); color: #000; }
   .tab:hover:not(.active) { color: var(--text); background: var(--card-2); }
 
   /* Panel */
   .panel { display: none; }
   .panel.active { display: block; }
 
-  /* Cards / Stats */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--card);
-    border-radius: var(--radius);
-    padding: 18px;
-    border: 1px solid var(--border);
-  }
-  .stat-label {
-    font-size: 12px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-  }
-  .stat-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .stat-value .sub {
-    font-size: 14px;
-    color: var(--text-dim);
-    font-weight: 400;
-    margin-left: 4px;
-  }
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card { background: var(--card); border-radius: var(--radius); padding: 18px; border: 1px solid var(--border); }
+  .stat-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-value .sub { font-size: 14px; color: var(--text-dim); font-weight: 400; margin-left: 4px; }
 
-  /* Chart */
-  .chart-card {
-    background: var(--card);
-    border-radius: var(--radius);
-    padding: 20px;
-    border: 1px solid var(--border);
-    margin-bottom: 24px;
-  }
-  .chart-card h3 {
-    font-size: 14px;
-    color: var(--text-dim);
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
+  /* Chart card */
+  .chart-card { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); margin-bottom: 24px; }
+  .chart-card h3 { font-size: 14px; color: var(--text-dim); margin-bottom: 16px; font-weight: 500; }
   .chart-wrap { height: 240px; position: relative; }
 
-  /* Loading */
-  .loading {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-dim);
-  }
-  .error-msg {
-    background: var(--error-bg);
-    color: var(--error);
-    padding: 14px;
-    border-radius: 10px;
-    margin-bottom: 16px;
-    font-size: 14px;
-  }
+  /* Loading & errors */
+  .loading { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .error-msg { background: var(--error-bg); color: var(--error); padding: 14px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
+  .success-msg { background: var(--success-bg); color: var(--success); padding: 14px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
 
   /* Events feed */
-  .events-feed {
-    background: var(--card);
-    border-radius: var(--radius);
-    padding: 20px;
-    border: 1px solid var(--border);
-  }
-  .events-feed h3 {
-    font-size: 14px;
-    color: var(--text-dim);
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
-  .event-item {
-    display: flex;
-    align-items: flex-start;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
+  .events-feed { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+  .events-feed h3 { font-size: 14px; color: var(--text-dim); margin-bottom: 16px; font-weight: 500; }
+  .event-item { display: flex; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
   .event-item:last-child { border-bottom: none; }
-  .event-time {
-    color: var(--text-dim);
-    font-size: 11px;
-    min-width: 64px;
-    margin-right: 12px;
-    flex-shrink: 0;
-  }
-  .event-icon {
-    margin-right: 8px;
-    font-size: 14px;
-  }
-  .event-text {
-    flex: 1;
-    color: var(--text);
-  }
-  .event-text .tg-id {
-    color: var(--text-dim);
-    font-family: monospace;
-    font-size: 12px;
-  }
+  .event-time { color: var(--text-dim); font-size: 11px; min-width: 64px; margin-right: 12px; flex-shrink: 0; }
+  .event-icon { margin-right: 8px; font-size: 14px; }
+  .event-text { flex: 1; color: var(--text); }
+  .event-text .tg-id { color: var(--text-dim); font-family: monospace; font-size: 12px; cursor: pointer; }
+  .event-text .tg-id:hover { color: var(--accent); }
 
-  /* Mobile adaptation */
+  /* Users table */
+  .users-toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .users-toolbar input, .users-toolbar select { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+  .users-toolbar input { flex: 1; min-width: 200px; }
+  .users-table-wrap { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+  .users-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .users-table th { background: var(--card-2); color: var(--text-dim); text-align: left; padding: 12px 14px; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .users-table td { padding: 12px 14px; border-top: 1px solid var(--border); }
+  .users-table tr.clickable { cursor: pointer; }
+  .users-table tr.clickable:hover td { background: var(--card-2); }
+  .users-table .tg-id { font-family: monospace; color: var(--text-dim); font-size: 12px; }
+  .users-table .level-badge { display: inline-block; background: var(--card-3); color: var(--text); padding: 2px 8px; border-radius: 6px; font-size: 11px; text-transform: uppercase; }
+  .users-table .sub-active { color: var(--success); font-size: 12px; }
+  .users-table .sub-none { color: var(--text-dim); font-size: 12px; }
+  .users-table .banned-badge { background: var(--error-bg); color: var(--error); padding: 2px 8px; border-radius: 6px; font-size: 10px; margin-left: 4px; }
+
+  /* User detail */
+  .back-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; margin-bottom: 20px; }
+  .back-btn:hover { background: var(--card-2); }
+  .user-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 900px) { .user-detail-grid { grid-template-columns: 1fr; } }
+  .detail-card { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+  .detail-card h3 { font-size: 13px; color: var(--text-dim); margin-bottom: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .detail-row .label { color: var(--text-dim); }
+  .detail-row .value { color: var(--text); font-weight: 500; text-align: right; }
+  .interests { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .interest-tag { background: var(--card-3); color: var(--text); padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+  .facts-list { margin-top: 6px; max-height: 200px; overflow-y: auto; }
+  .fact-item { padding: 8px 12px; background: var(--card-2); border-radius: 8px; margin-bottom: 6px; font-size: 13px; color: var(--text); }
+
+  /* Action buttons */
+  .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .action-btn { background: var(--card-2); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.15s; }
+  .action-btn:hover { background: var(--card-3); }
+  .action-btn.danger { background: var(--error-bg); color: var(--error); border-color: rgba(255, 107, 107, 0.3); }
+  .action-btn.success { background: var(--success-bg); color: var(--success); border-color: rgba(78, 201, 163, 0.3); }
+
+  /* History */
+  .history-card { background: var(--card); border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); }
+  .history-card h3 { font-size: 13px; color: var(--text-dim); margin-bottom: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .history-list { max-height: 600px; overflow-y: auto; }
+  .history-item { padding: 10px 0; border-bottom: 1px solid var(--border); display: flex; }
+  .history-item:last-child { border-bottom: none; }
+  .history-role { font-size: 10px; text-transform: uppercase; min-width: 50px; margin-right: 12px; padding-top: 2px; letter-spacing: 0.5px; }
+  .history-role.user { color: var(--accent); }
+  .history-role.bot { color: var(--warm); }
+  .history-text { flex: 1; font-size: 13px; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .history-time { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--card); border-radius: var(--radius); padding: 24px; max-width: 400px; width: 100%; }
+  .modal h3 { margin-bottom: 12px; }
+  .modal p { color: var(--text-dim); margin-bottom: 16px; font-size: 14px; }
+  .modal input { width: 100%; background: var(--card-2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
+  .modal .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Mobile */
   @media (max-width: 640px) {
     body { padding: 12px; }
     .header h1 { font-size: 18px; }
     .stat-value { font-size: 22px; }
     .stat-card { padding: 14px; }
     .chart-wrap { height: 200px; }
+    .users-table { font-size: 12px; }
+    .users-table th, .users-table td { padding: 8px 10px; }
   }
 </style>
 </head>
@@ -229,34 +167,76 @@
   <!-- DASHBOARD -->
   <div class="panel active" id="panel-dashboard">
     <div id="dashboard-error"></div>
-
-    <div class="stats-grid" id="stats-grid">
-      <div class="loading">Загружаю статистику...</div>
-    </div>
-
+    <div class="stats-grid" id="stats-grid"><div class="loading">Загружаю...</div></div>
     <div class="chart-card">
       <h3>Активность за 7 дней</h3>
-      <div class="chart-wrap">
-        <canvas id="activity-chart"></canvas>
-      </div>
+      <div class="chart-wrap"><canvas id="activity-chart"></canvas></div>
     </div>
-
     <div class="events-feed">
       <h3>Последние события</h3>
-      <div id="recent-events">
-        <div class="loading">Загружаю...</div>
-      </div>
+      <div id="recent-events"><div class="loading">Загружаю...</div></div>
     </div>
   </div>
 
-  <!-- USERS placeholder, заполним во второй части -->
+  <!-- USERS -->
   <div class="panel" id="panel-users">
-    <div class="loading">Будет добавлено во второй части...</div>
+    <div id="users-view">
+      <div class="users-toolbar">
+        <input type="text" id="users-search" placeholder="Поиск по имени, username, ID...">
+        <select id="users-filter">
+          <option value="all">Все юзеры</option>
+          <option value="active-today">Активны сегодня</option>
+          <option value="paid">Платные</option>
+          <option value="banned">Забаненные</option>
+        </select>
+      </div>
+      <div class="users-table-wrap">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Имя</th>
+              <th>Username</th>
+              <th>Level</th>
+              <th>Сообщений</th>
+              <th>Streak</th>
+              <th>Активность</th>
+              <th>Подписка</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="7" class="loading">Загружаю...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div id="user-detail-view" style="display:none;"></div>
   </div>
 
-  <!-- EVENTS placeholder, заполним во второй части -->
+  <!-- EVENTS -->
   <div class="panel" id="panel-events">
-    <div class="loading">Будет добавлено во второй части...</div>
+    <div class="events-feed">
+      <h3>Все события (последние 100)</h3>
+      <div id="all-events"><div class="loading">Загружаю...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Grant modal -->
+<div class="modal-overlay" id="grant-modal">
+  <div class="modal">
+    <h3>Выдать подписку</h3>
+    <p>Юзер: <span id="grant-tg-id"></span></p>
+    <input type="number" id="grant-days" placeholder="Количество дней" value="30" min="1" max="3650">
+    <select id="grant-plan" style="width:100%; background: var(--card-2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
+      <option value="gift">gift (подарочная)</option>
+      <option value="month">month (1 месяц)</option>
+      <option value="quarter">quarter (3 месяца)</option>
+      <option value="year">year (1 год)</option>
+    </select>
+    <div class="modal-actions">
+      <button class="action-btn" onclick="closeGrantModal()">Отмена</button>
+      <button class="action-btn success" onclick="confirmGrant()">Выдать</button>
+    </div>
   </div>
 </div>
 
@@ -265,15 +245,12 @@
 // CONFIG
 // ============================================================
 
-// Достаём ключ из URL или из Telegram initData
 const urlParams = new URLSearchParams(window.location.search);
 const ADMIN_KEY = urlParams.get('key') || '';
 const tg = window.Telegram?.WebApp;
 const tgInitData = tg?.initData || '';
-
 if (tg) { tg.ready(); tg.expand(); }
 
-// Базовый URL для API
 const API_BASE = '/api/admin';
 
 // ============================================================
@@ -292,15 +269,10 @@ async function apiCall(action, params = {}, method = 'GET', body = null) {
   const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
 
-  try {
-    const r = await fetch(url.toString(), opts);
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || 'API error');
-    return j;
-  } catch (e) {
-    console.error('API error:', action, e);
-    throw e;
-  }
+  const r = await fetch(url.toString(), opts);
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'API error');
+  return j;
 }
 
 // ============================================================
@@ -313,6 +285,9 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+
+    if (btn.dataset.tab === 'users') loadUsers();
+    if (btn.dataset.tab === 'events') loadAllEvents();
   });
 });
 
@@ -329,79 +304,47 @@ async function loadDashboard() {
   document.getElementById('recent-events').innerHTML = '<div class="loading">Загружаю...</div>';
 
   try {
-    // Статистика + график
     const statsRes = await apiCall('stats');
     renderStats(statsRes.stats);
     renderActivityChart(statsRes.dailyActivity);
 
-    // Последние события (10 штук)
     const eventsRes = await apiCall('events', { limit: 10 });
     renderRecentEvents(eventsRes.events || []);
 
     document.getElementById('auth-badge').textContent = 'OK';
     document.getElementById('auth-badge').style.background = 'var(--success)';
   } catch (e) {
-    errBox.innerHTML = '<div class="error-msg">❌ ' + (e.message || 'Ошибка загрузки') + '. Проверь ключ доступа.</div>';
+    errBox.innerHTML = '<div class="error-msg">❌ ' + (e.message || 'Ошибка') + '</div>';
     document.getElementById('auth-badge').textContent = 'ERR';
     document.getElementById('auth-badge').style.background = 'var(--error)';
   }
 }
 
 function renderStats(stats) {
-  const grid = document.getElementById('stats-grid');
-  grid.innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Юзеров всего</div>
-      <div class="stat-value">${stats.usersTotal}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Активны сегодня</div>
-      <div class="stat-value">${stats.activeToday}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Активны за 7 дней</div>
-      <div class="stat-value">${stats.activeWeek}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Сообщений сегодня</div>
-      <div class="stat-value">${stats.messagesToday}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Платных подписок</div>
-      <div class="stat-value">${stats.paidCount}<span class="sub">из ${stats.activeSubsCount}</span></div>
-    </div>
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Юзеров всего</div><div class="stat-value">${stats.usersTotal}</div></div>
+    <div class="stat-card"><div class="stat-label">Активны сегодня</div><div class="stat-value">${stats.activeToday}</div></div>
+    <div class="stat-card"><div class="stat-label">Активны за 7 дней</div><div class="stat-value">${stats.activeWeek}</div></div>
+    <div class="stat-card"><div class="stat-label">Сообщений сегодня</div><div class="stat-value">${stats.messagesToday}</div></div>
+    <div class="stat-card"><div class="stat-label">Платных подписок</div><div class="stat-value">${stats.paidCount}<span class="sub">из ${stats.activeSubsCount}</span></div></div>
   `;
 }
 
 function renderActivityChart(daily) {
   const ctx = document.getElementById('activity-chart');
   if (activityChart) activityChart.destroy();
-
   activityChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: daily.map(d => d.date.slice(5)), // MM-DD
-      datasets: [{
-        label: 'Активных юзеров',
-        data: daily.map(d => d.count),
-        backgroundColor: '#5eb5f7',
-        borderRadius: 6,
-      }]
+      labels: daily.map(d => d.date.slice(5)),
+      datasets: [{ label: 'Активных', data: daily.map(d => d.count), backgroundColor: '#5eb5f7', borderRadius: 6 }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { color: '#9aa0aa', precision: 0 },
-          grid: { color: 'rgba(255,255,255,0.06)' }
-        },
-        x: {
-          ticks: { color: '#9aa0aa' },
-          grid: { display: false }
-        }
+        y: { beginAtZero: true, ticks: { color: '#9aa0aa', precision: 0 }, grid: { color: 'rgba(255,255,255,0.06)' } },
+        x: { ticks: { color: '#9aa0aa' }, grid: { display: false } }
       }
     }
   });
@@ -409,10 +352,7 @@ function renderActivityChart(daily) {
 
 function renderRecentEvents(events) {
   const box = document.getElementById('recent-events');
-  if (!events.length) {
-    box.innerHTML = '<div class="loading">Событий пока нет</div>';
-    return;
-  }
+  if (!events.length) { box.innerHTML = '<div class="loading">Событий пока нет</div>'; return; }
   box.innerHTML = events.map(e => renderEventLine(e)).join('');
 }
 
@@ -421,40 +361,322 @@ function renderEventLine(e) {
   const timeStr = time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   const icon = eventIcon(e.type);
   const text = eventText(e);
-  const tgId = e.tgId ? `<span class="tg-id">${e.tgId}</span>` : '';
-  return `<div class="event-item">
-    <div class="event-time">${timeStr}</div>
-    <div class="event-icon">${icon}</div>
-    <div class="event-text">${text} ${tgId}</div>
-  </div>`;
+  const tgId = e.tgId ? `<span class="tg-id" onclick="openUserDetail('${e.tgId}')">${e.tgId}</span>` : '';
+  return `<div class="event-item"><div class="event-time">${timeStr}</div><div class="event-icon">${icon}</div><div class="event-text">${text} ${tgId}</div></div>`;
 }
 
 function eventIcon(type) {
-  const map = {
-    new_user: '🟢',
-    payment: '💰',
-    referral: '🎁',
-    paywall_hit: '🚫',
-    error: '❌',
-    grant: '✨',
-    returned: '👋',
-    premium_shown: '💎',
-  };
-  return map[type] || '📌';
+  return { new_user: '🟢', payment: '💰', referral: '🎁', paywall_hit: '🚫', error: '❌', grant: '✨', returned: '👋', premium_shown: '💎' }[type] || '📌';
 }
 
 function eventText(e) {
   switch (e.type) {
-    case 'new_user': return 'Новый юзер' + (e.firstName ? ' (' + e.firstName + ')' : '');
+    case 'new_user': return 'Новый юзер' + (e.firstName ? ' (' + escapeHtml(e.firstName) + ')' : '');
     case 'payment': return 'Покупка Premium — ' + (e.plan || '?');
     case 'referral': return 'Пришёл по рефералке от ' + (e.inviterId || '?');
     case 'paywall_hit': return 'Упёрся в пейвол' + (e.isFirstDay ? ' (день 1)' : '');
-    case 'error': return 'Ошибка: ' + (e.msg || '?');
+    case 'error': return 'Ошибка: ' + escapeHtml(e.msg || '?');
     case 'grant': return 'Выдали подписку: +' + (e.days || '?') + ' дней (' + (e.plan || '?') + ')';
-    case 'returned': return 'Вернулся после ' + (e.daysAway || '?') + ' дней отсутствия';
+    case 'returned': return 'Вернулся после ' + (e.daysAway || '?') + ' дней';
     case 'premium_shown': return 'Открыл /premium';
-    default: return e.type;
+    default: return escapeHtml(e.type);
   }
+}
+
+// ============================================================
+// USERS LIST
+// ============================================================
+
+let allUsersData = [];
+
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="loading">Загружаю...</td></tr>';
+  try {
+    const res = await apiCall('users');
+    allUsersData = res.users || [];
+    renderUsersTable();
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="7" class="error-msg">' + (e.message || 'Ошибка') + '</td></tr>';
+  }
+}
+
+function renderUsersTable() {
+  const search = document.getElementById('users-search').value.toLowerCase().trim();
+  const filter = document.getElementById('users-filter').value;
+  const today = new Date().toISOString().slice(0, 10);
+
+  let users = allUsersData;
+
+  if (filter === 'active-today') {
+    users = users.filter(u => u.lastActive && new Date(u.lastActive).toISOString().slice(0, 10) === today);
+  } else if (filter === 'paid') {
+    users = users.filter(u => u.subActive && ['month', 'quarter', 'year'].includes(u.subPlan));
+  } else if (filter === 'banned') {
+    users = users.filter(u => u.banned);
+  }
+
+  if (search) {
+    users = users.filter(u =>
+      (u.name && u.name.toLowerCase().includes(search)) ||
+      (u.username && u.username.toLowerCase().includes(search)) ||
+      u.tgId.includes(search)
+    );
+  }
+
+  const tbody = document.getElementById('users-tbody');
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет юзеров по фильтру</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const lastAct = u.lastActive ? timeAgo(u.lastActive) : '—';
+    const bannedBadge = u.banned ? '<span class="banned-badge">BAN</span>' : '';
+    const subCell = u.subActive
+      ? '<span class="sub-active">' + (u.subPlan || '?') + (u.subUntil ? ' до ' + new Date(u.subUntil).toLocaleDateString('ru-RU') : '') + '</span>'
+      : '<span class="sub-none">—</span>';
+    const nameDisplay = (u.name || '—') + bannedBadge;
+    return `<tr class="clickable" onclick="openUserDetail('${u.tgId}')">
+      <td>${escapeHtml(nameDisplay)}<div class="tg-id">${u.tgId}</div></td>
+      <td>${u.username ? '@' + escapeHtml(u.username) : '—'}</td>
+      <td><span class="level-badge">${u.level || 'beg'}</span></td>
+      <td>${u.messages || 0}</td>
+      <td>🔥 ${u.streak || 0}</td>
+      <td>${lastAct}</td>
+      <td>${subCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('users-search').addEventListener('input', renderUsersTable);
+document.getElementById('users-filter').addEventListener('change', renderUsersTable);
+
+// ============================================================
+// USER DETAIL
+// ============================================================
+
+let currentUserTgId = null;
+
+async function openUserDetail(tgId) {
+  // Переключаемся на таб Users если не там
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tab[data-tab="users"]').classList.add('active');
+  document.getElementById('panel-users').classList.add('active');
+
+  document.getElementById('users-view').style.display = 'none';
+  const detailView = document.getElementById('user-detail-view');
+  detailView.style.display = 'block';
+  detailView.innerHTML = '<div class="loading">Загружаю карточку...</div>';
+
+  currentUserTgId = tgId;
+
+  try {
+    const res = await apiCall('user', { tgId });
+    renderUserDetail(res);
+  } catch (e) {
+    detailView.innerHTML = '<button class="back-btn" onclick="closeUserDetail()">← Назад к списку</button><div class="error-msg">' + (e.message || 'Ошибка') + '</div>';
+  }
+}
+
+function closeUserDetail() {
+  document.getElementById('user-detail-view').style.display = 'none';
+  document.getElementById('users-view').style.display = 'block';
+  currentUserTgId = null;
+}
+
+function renderUserDetail(data) {
+  const u = data.user;
+  const p = u.profile || {};
+  const m = u.meta || {};
+  const s = u.stats || {};
+  const st = u.streak || {};
+  const sub = u.sub;
+  const history = data.history || [];
+
+  const subInfo = sub && sub.active && sub.until && new Date(sub.until) > new Date()
+    ? `<div class="detail-row"><span class="label">План</span><span class="value sub-active">${sub.plan}</span></div>
+       <div class="detail-row"><span class="label">До</span><span class="value">${new Date(sub.until).toLocaleDateString('ru-RU')}</span></div>
+       <div class="detail-row"><span class="label">Источник</span><span class="value">${sub.source || '—'}</span></div>`
+    : `<div class="detail-row"><span class="label">Подписка</span><span class="value sub-none">не активна</span></div>`;
+
+  const facts = (p.facts || []).slice(-15).reverse();
+  const interests = p.interests || [];
+
+  let correctness = 0;
+  if (s.messages && s.messages > 0) correctness = Math.round((s.correct || 0) / s.messages * 100);
+
+  document.getElementById('user-detail-view').innerHTML = `
+    <button class="back-btn" onclick="closeUserDetail()">← Назад к списку</button>
+    <div id="detail-msg"></div>
+
+    <div class="user-detail-grid">
+      <div class="detail-card">
+        <h3>Профиль</h3>
+        <div class="detail-row"><span class="label">ID</span><span class="value" style="font-family:monospace;">${u.tgId}</span></div>
+        <div class="detail-row"><span class="label">Имя</span><span class="value">${escapeHtml(p.name || m.first_name || '—')}</span></div>
+        ${m.username ? `<div class="detail-row"><span class="label">Username</span><span class="value">@${escapeHtml(m.username)}</span></div>` : ''}
+        ${p.age ? `<div class="detail-row"><span class="label">Возраст</span><span class="value">${p.age}</span></div>` : ''}
+        ${p.location ? `<div class="detail-row"><span class="label">Локация</span><span class="value">${escapeHtml(p.location)}</span></div>` : ''}
+        ${p.occupation ? `<div class="detail-row"><span class="label">Профессия</span><span class="value">${escapeHtml(p.occupation)}</span></div>` : ''}
+        <div class="detail-row"><span class="label">CEFR Level</span><span class="value"><span class="level-badge">${p.level || 'beginner'}</span></span></div>
+        <div class="detail-row"><span class="label">Регистрация</span><span class="value">${u.joinedAt ? new Date(u.joinedAt).toLocaleDateString('ru-RU') : '—'}</span></div>
+        <div class="detail-row"><span class="label">Последний раз</span><span class="value">${u.lastActive ? timeAgo(u.lastActive) : '—'}</span></div>
+        ${interests.length ? `<div style="margin-top:12px;"><div class="label" style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Интересы:</div><div class="interests">${interests.map(i => '<span class="interest-tag">' + escapeHtml(i) + '</span>').join('')}</div></div>` : ''}
+      </div>
+
+      <div class="detail-card">
+        <h3>Статистика и подписка</h3>
+        <div class="detail-row"><span class="label">Сообщений</span><span class="value">${s.messages || 0}</span></div>
+        <div class="detail-row"><span class="label">Слов</span><span class="value">${s.words || 0}</span></div>
+        <div class="detail-row"><span class="label">Без ошибок</span><span class="value">${correctness}%</span></div>
+        <div class="detail-row"><span class="label">Streak</span><span class="value">🔥 ${st.current || 0} (макс ${st.max || 0})</span></div>
+        ${u.refCount > 0 ? `<div class="detail-row"><span class="label">Пригласил</span><span class="value">${u.refCount}</span></div>` : ''}
+        ${u.referredBy ? `<div class="detail-row"><span class="label">Приглашён</span><span class="value tg-id" style="font-family:monospace;cursor:pointer;" onclick="openUserDetail('${u.referredBy}')">${u.referredBy}</span></div>` : ''}
+        <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);"></div>
+        ${subInfo}
+        <div class="action-row">
+          <button class="action-btn success" onclick="openGrantModal('${u.tgId}')">+ Выдать дни</button>
+          ${sub && sub.active ? `<button class="action-btn danger" onclick="doAction('revoke', '${u.tgId}', 'Отозвать подписку?')">Отозвать</button>` : ''}
+          ${u.banned
+            ? `<button class="action-btn success" onclick="doAction('unban', '${u.tgId}', 'Разбанить юзера?')">Разбанить</button>`
+            : `<button class="action-btn danger" onclick="doAction('ban', '${u.tgId}', 'Заблокировать юзера?')">Заблокировать</button>`}
+          <button class="action-btn" onclick="doAction('reset_daily', '${u.tgId}', 'Сбросить счётчик сообщений за сегодня?')">Сбросить лимит</button>
+          <button class="action-btn danger" onclick="doAction('clear_history', '${u.tgId}', 'Очистить ВСЮ историю диалога?')">Очистить историю</button>
+          <button class="action-btn danger" onclick="confirmDeleteAll('${u.tgId}')">УДАЛИТЬ полностью</button>
+        </div>
+      </div>
+    </div>
+
+    ${facts.length ? `<div class="detail-card" style="margin-bottom:20px;">
+      <h3>Факты о юзере (последние 15)</h3>
+      <div class="facts-list">
+        ${facts.map(f => '<div class="fact-item">' + escapeHtml(f) + '</div>').join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="history-card">
+      <h3>История диалога (${history.length} сообщений)</h3>
+      <div class="history-list">
+        ${history.length === 0
+          ? '<div class="loading">История пустая</div>'
+          : history.map(h => `<div class="history-item">
+              <div class="history-role ${h.role}">${h.role || '?'}</div>
+              <div>
+                <div class="history-text">${escapeHtml(h.text || '')}</div>
+                <div class="history-time">${h.ts ? new Date(h.ts).toLocaleString('ru-RU') : ''}</div>
+              </div>
+            </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+
+async function doAction(type, tgId, confirmMsg) {
+  if (!confirm(confirmMsg)) return;
+  try {
+    await apiCall('do', {}, 'POST', { type, tgId });
+    showDetailMsg('✅ Действие выполнено', 'success');
+    if (currentUserTgId === tgId) openUserDetail(tgId);
+    else loadUsers();
+  } catch (e) {
+    showDetailMsg('❌ ' + (e.message || 'Ошибка'), 'error');
+  }
+}
+
+function confirmDeleteAll(tgId) {
+  const c = prompt('Это удалит ВСЕ данные юзера ' + tgId + '. Это необратимо.\n\nВведи "DELETE" чтобы подтвердить:');
+  if (c !== 'DELETE') return;
+  doActionDirect('delete_all', tgId, 'Юзер удалён');
+}
+
+async function doActionDirect(type, tgId, successMsg) {
+  try {
+    await apiCall('do', {}, 'POST', { type, tgId });
+    showDetailMsg('✅ ' + successMsg, 'success');
+    setTimeout(() => { closeUserDetail(); loadUsers(); }, 1000);
+  } catch (e) {
+    showDetailMsg('❌ ' + (e.message || 'Ошибка'), 'error');
+  }
+}
+
+function showDetailMsg(text, type) {
+  const box = document.getElementById('detail-msg');
+  if (!box) return;
+  box.innerHTML = '<div class="' + (type === 'success' ? 'success-msg' : 'error-msg') + '">' + text + '</div>';
+  setTimeout(() => { box.innerHTML = ''; }, 3000);
+}
+
+// ============================================================
+// GRANT MODAL
+// ============================================================
+
+function openGrantModal(tgId) {
+  document.getElementById('grant-tg-id').textContent = tgId;
+  document.getElementById('grant-modal').classList.add('show');
+}
+
+function closeGrantModal() {
+  document.getElementById('grant-modal').classList.remove('show');
+}
+
+async function confirmGrant() {
+  const tgId = document.getElementById('grant-tg-id').textContent;
+  const days = Number(document.getElementById('grant-days').value);
+  const plan = document.getElementById('grant-plan').value;
+  if (!days || days < 1) { alert('Введи число дней'); return; }
+
+  try {
+    await apiCall('do', {}, 'POST', { type: 'grant', tgId, days, plan });
+    closeGrantModal();
+    showDetailMsg('✅ Подписка выдана: +' + days + ' дней (' + plan + ')', 'success');
+    openUserDetail(tgId);
+  } catch (e) {
+    alert('Ошибка: ' + (e.message || 'unknown'));
+  }
+}
+
+// ============================================================
+// EVENTS TAB
+// ============================================================
+
+async function loadAllEvents() {
+  const box = document.getElementById('all-events');
+  box.innerHTML = '<div class="loading">Загружаю...</div>';
+  try {
+    const res = await apiCall('events', { limit: 100 });
+    const events = res.events || [];
+    if (!events.length) { box.innerHTML = '<div class="loading">Событий пока нет</div>'; return; }
+    box.innerHTML = events.map(e => renderEventLine(e)).join('');
+  } catch (e) {
+    box.innerHTML = '<div class="error-msg">' + (e.message || 'Ошибка') + '</div>';
+  }
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+
+function timeAgo(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'сейчас';
+  if (m < 60) return m + ' мин';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + ' ч';
+  const d = Math.floor(h / 24);
+  if (d < 30) return d + ' дн';
+  return new Date(ts).toLocaleDateString('ru-RU');
+}
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ============================================================
@@ -462,7 +684,13 @@ function eventText(e) {
 // ============================================================
 
 function refreshAll() {
-  loadDashboard();
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  if (activeTab === 'dashboard') loadDashboard();
+  else if (activeTab === 'users') {
+    if (currentUserTgId) openUserDetail(currentUserTgId);
+    else loadUsers();
+  }
+  else if (activeTab === 'events') loadAllEvents();
 }
 
 // ============================================================
@@ -470,11 +698,9 @@ function refreshAll() {
 // ============================================================
 
 loadDashboard();
-
-// Авто-обновление Dashboard каждые 30 секунд
 setInterval(() => {
   const activeTab = document.querySelector('.tab.active').dataset.tab;
-  if (activeTab === 'dashboard') loadDashboard();
+  if (activeTab === 'dashboard' && !currentUserTgId) loadDashboard();
 }, 30000);
 </script>
 </body>
