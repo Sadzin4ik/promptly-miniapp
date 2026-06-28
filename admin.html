@@ -366,7 +366,7 @@ function renderEventLine(e) {
 }
 
 function eventIcon(type) {
-  return { new_user: '🟢', payment: '💰', referral: '🎁', paywall_hit: '🚫', error: '❌', grant: '✨', returned: '👋', premium_shown: '💎' }[type] || '📌';
+  return { new_user: '🟢', payment: '💰', referral: '🎁', paywall_hit: '🚫', error: '❌', grant: '✨', returned: '👋', premium_shown: '💎', reminder_sent: '📩', bot_blocked: '🚷' }[type] || '📌';
 }
 
 function eventText(e) {
@@ -379,6 +379,8 @@ function eventText(e) {
     case 'grant': return 'Выдали подписку: +' + (e.days || '?') + ' дней (' + (e.plan || '?') + ')';
     case 'returned': return 'Вернулся после ' + (e.daysAway || '?') + ' дней';
     case 'premium_shown': return 'Открыл /premium';
+    case 'reminder_sent': return 'Отправлено напоминание (' + (e.daysAway || '?') + ' дн отсутствия)';
+    case 'bot_blocked': return 'Юзер заблокировал бот';
     default: return escapeHtml(e.type);
   }
 }
