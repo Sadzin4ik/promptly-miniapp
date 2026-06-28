@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Promptly Admin</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #1a1d24;
+    --card-2: #21252e;
+    --card-3: #2a2f3a;
+    --text: #e8eaed;
+    --text-dim: #9aa0aa;
+    --accent: #5eb5f7;
+    --accent-2: #7b6ef6;
+    --warm: #f7b955;
+    --error: #ff6b6b;
+    --error-bg: rgba(255, 107, 107, 0.12);
+    --success: #4ec9a3;
+    --success-bg: rgba(78, 201, 163, 0.12);
+    --border: rgba(255, 255, 255, 0.07);
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .header h1 .badge {
+    font-size: 11px;
+    background: var(--accent);
+    color: #000;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .header .refresh-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .header .refresh-btn:hover { background: var(--card-2); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 18px;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #000;
+  }
+  .tab:hover:not(.active) { color: var(--text); background: var(--card-2); }
+
+  /* Panel */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Cards / Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    border: 1px solid var(--border);
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-value .sub {
+    font-size: 14px;
+    color: var(--text-dim);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  /* Chart */
+  .chart-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .chart-card h3 {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .chart-wrap { height: 240px; position: relative; }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+  .error-msg {
+    background: var(--error-bg);
+    color: var(--error);
+    padding: 14px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+
+  /* Events feed */
+  .events-feed {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 1px solid var(--border);
+  }
+  .events-feed h3 {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .event-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .event-item:last-child { border-bottom: none; }
+  .event-time {
+    color: var(--text-dim);
+    font-size: 11px;
+    min-width: 64px;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .event-icon {
+    margin-right: 8px;
+    font-size: 14px;
+  }
+  .event-text {
+    flex: 1;
+    color: var(--text);
+  }
+  .event-text .tg-id {
+    color: var(--text-dim);
+    font-family: monospace;
+    font-size: 12px;
+  }
+
+  /* Mobile adaptation */
+  @media (max-width: 640px) {
+    body { padding: 12px; }
+    .header h1 { font-size: 18px; }
+    .stat-value { font-size: 22px; }
+    .stat-card { padding: 14px; }
+    .chart-wrap { height: 200px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Promptly Admin <span class="badge" id="auth-badge">…</span></h1>
+    <button class="refresh-btn" onclick="refreshAll()">⟳ Обновить</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab" data-tab="users">👥 Users</button>
+    <button class="tab" data-tab="events">📋 Events</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="panel-dashboard">
+    <div id="dashboard-error"></div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="loading">Загружаю статистику...</div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Активность за 7 дней</h3>
+      <div class="chart-wrap">
+        <canvas id="activity-chart"></canvas>
+      </div>
+    </div>
+
+    <div class="events-feed">
+      <h3>Последние события</h3>
+      <div id="recent-events">
+        <div class="loading">Загружаю...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USERS placeholder, заполним во второй части -->
+  <div class="panel" id="panel-users">
+    <div class="loading">Будет добавлено во второй части...</div>
+  </div>
+
+  <!-- EVENTS placeholder, заполним во второй части -->
+  <div class="panel" id="panel-events">
+    <div class="loading">Будет добавлено во второй части...</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+
+// Достаём ключ из URL или из Telegram initData
+const urlParams = new URLSearchParams(window.location.search);
+const ADMIN_KEY = urlParams.get('key') || '';
+const tg = window.Telegram?.WebApp;
+const tgInitData = tg?.initData || '';
+
+if (tg) { tg.ready(); tg.expand(); }
+
+// Базовый URL для API
+const API_BASE = '/api/admin';
+
+// ============================================================
+// API HELPER
+// ============================================================
+
+async function apiCall(action, params = {}, method = 'GET', body = null) {
+  const url = new URL(API_BASE, window.location.origin);
+  url.searchParams.set('action', action);
+  if (ADMIN_KEY) url.searchParams.set('key', ADMIN_KEY);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (tgInitData) headers['x-init-data'] = tgInitData;
+
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+
+  try {
+    const r = await fetch(url.toString(), opts);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'API error');
+    return j;
+  } catch (e) {
+    console.error('API error:', action, e);
+    throw e;
+  }
+}
+
+// ============================================================
+// TABS
+// ============================================================
+
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+
+let activityChart = null;
+
+async function loadDashboard() {
+  const errBox = document.getElementById('dashboard-error');
+  errBox.innerHTML = '';
+  document.getElementById('stats-grid').innerHTML = '<div class="loading">Загружаю...</div>';
+  document.getElementById('recent-events').innerHTML = '<div class="loading">Загружаю...</div>';
+
+  try {
+    // Статистика + график
+    const statsRes = await apiCall('stats');
+    renderStats(statsRes.stats);
+    renderActivityChart(statsRes.dailyActivity);
+
+    // Последние события (10 штук)
+    const eventsRes = await apiCall('events', { limit: 10 });
+    renderRecentEvents(eventsRes.events || []);
+
+    document.getElementById('auth-badge').textContent = 'OK';
+    document.getElementById('auth-badge').style.background = 'var(--success)';
+  } catch (e) {
+    errBox.innerHTML = '<div class="error-msg">❌ ' + (e.message || 'Ошибка загрузки') + '. Проверь ключ доступа.</div>';
+    document.getElementById('auth-badge').textContent = 'ERR';
+    document.getElementById('auth-badge').style.background = 'var(--error)';
+  }
+}
+
+function renderStats(stats) {
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Юзеров всего</div>
+      <div class="stat-value">${stats.usersTotal}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Активны сегодня</div>
+      <div class="stat-value">${stats.activeToday}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Активны за 7 дней</div>
+      <div class="stat-value">${stats.activeWeek}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Сообщений сегодня</div>
+      <div class="stat-value">${stats.messagesToday}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Платных подписок</div>
+      <div class="stat-value">${stats.paidCount}<span class="sub">из ${stats.activeSubsCount}</span></div>
+    </div>
+  `;
+}
+
+function renderActivityChart(daily) {
+  const ctx = document.getElementById('activity-chart');
+  if (activityChart) activityChart.destroy();
+
+  activityChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: daily.map(d => d.date.slice(5)), // MM-DD
+      datasets: [{
+        label: 'Активных юзеров',
+        data: daily.map(d => d.count),
+        backgroundColor: '#5eb5f7',
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#9aa0aa', precision: 0 },
+          grid: { color: 'rgba(255,255,255,0.06)' }
+        },
+        x: {
+          ticks: { color: '#9aa0aa' },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderRecentEvents(events) {
+  const box = document.getElementById('recent-events');
+  if (!events.length) {
+    box.innerHTML = '<div class="loading">Событий пока нет</div>';
+    return;
+  }
+  box.innerHTML = events.map(e => renderEventLine(e)).join('');
+}
+
+function renderEventLine(e) {
+  const time = new Date(e.ts);
+  const timeStr = time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const icon = eventIcon(e.type);
+  const text = eventText(e);
+  const tgId = e.tgId ? `<span class="tg-id">${e.tgId}</span>` : '';
+  return `<div class="event-item">
+    <div class="event-time">${timeStr}</div>
+    <div class="event-icon">${icon}</div>
+    <div class="event-text">${text} ${tgId}</div>
+  </div>`;
+}
+
+function eventIcon(type) {
+  const map = {
+    new_user: '🟢',
+    payment: '💰',
+    referral: '🎁',
+    paywall_hit: '🚫',
+    error: '❌',
+    grant: '✨',
+    returned: '👋',
+    premium_shown: '💎',
+  };
+  return map[type] || '📌';
+}
+
+function eventText(e) {
+  switch (e.type) {
+    case 'new_user': return 'Новый юзер' + (e.firstName ? ' (' + e.firstName + ')' : '');
+    case 'payment': return 'Покупка Premium — ' + (e.plan || '?');
+    case 'referral': return 'Пришёл по рефералке от ' + (e.inviterId || '?');
+    case 'paywall_hit': return 'Упёрся в пейвол' + (e.isFirstDay ? ' (день 1)' : '');
+    case 'error': return 'Ошибка: ' + (e.msg || '?');
+    case 'grant': return 'Выдали подписку: +' + (e.days || '?') + ' дней (' + (e.plan || '?') + ')';
+    case 'returned': return 'Вернулся после ' + (e.daysAway || '?') + ' дней отсутствия';
+    case 'premium_shown': return 'Открыл /premium';
+    default: return e.type;
+  }
+}
+
+// ============================================================
+// REFRESH
+// ============================================================
+
+function refreshAll() {
+  loadDashboard();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+loadDashboard();
+
+// Авто-обновление Dashboard каждые 30 секунд
+setInterval(() => {
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  if (activeTab === 'dashboard') loadDashboard();
+}, 30000);
+</script>
+</body>
+</html>
